@@ -2,12 +2,15 @@
 
 | Phase | Status | Branch / PR | Notes |
 |---|---|---|---|
-| Spec | Draft, awaiting review | — | `docs/SPEC.md` v0.1 |
-| 0: Foundation & engine spike | Not started | — | Blocked on spec approval and D1 (license) |
-| 1: Core browser | Not started | — | |
-| 2: Memory management | Not started | — | |
-| 3: Built-in features | Not started | — | |
-| 4: Polish & tester release | Not started | — | |
+| Spec | v0.2 draft, awaiting owner approval | — | Review 1 incorporated |
+| 0a: Repo foundation | Ready to start after approval | `phase-0a-foundation` | Prompt: `docs/prompts/phase-0a.md` |
+| 0b: Windows engine spike | Ready to start after approval | `phase-0b-windows-spike` | Prompt: `docs/prompts/phase-0b.md`. Can run in parallel with 0a |
+| 0c: macOS + Linux spike | Not started | — | Hands-on macOS checks wait for the MacBook |
+| 0d: Memory probe + bench v0 + baselines | Not started | — | Needs Q1 answered (Brave Memory Saver) |
+| 1a / 1b / 1c: Core browser | Not started | — | |
+| 2a / 2b: Memory management | Not started | — | |
+| 3a / 3b: Built-in features | Not started | — | |
+| 4a / 4b: Polish & tester release | Not started | — | |
 | 5+ | Not started | — | |
 
 ## Current handoff notes

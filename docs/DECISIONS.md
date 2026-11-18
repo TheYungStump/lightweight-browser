@@ -11,3 +11,19 @@ Template:
 - Alternatives considered:
 - Spec sections affected:
 ```
+
+## DEC-001: License is FSL-1.1-ALv2 with a CLA  (2026-11-18, spec)
+- Context: the code should be public, but nobody should be able to sell a competing copy.
+- Decision: Functional Source License 1.1 with Apache-2.0 as the future license (each release becomes Apache-2.0 after two years). Contributors sign a CLA via CLA Assistant.
+- Alternatives considered: GPL/MPL (allow commercial forks), PolyForm Shield (never becomes open source).
+- Spec sections affected: §5.1, §13 D1.
+
+## DEC-002: Repository is public  (2026-11-18, spec)
+- Context: free GitHub Actions minutes on standard runners (macOS minutes cost 10x on private repos); trust and marketing.
+- Decision: the repo is public. The LICENSE file lands in Phase 0a.
+- Spec sections affected: §13 D3.
+
+## DEC-003: Spec v0.2 incorporates review 1  (2026-11-18, spec)
+- Context: `docs/reviews/spec-review-1.md` (approve with changes).
+- Decision: all blocking findings (B1–B4) and should-fix items accepted, with these adjustments: the MV3-extension blocker is evaluated in 3a, not Phase 0; early cheap Windows signing is a conditional decision (D8) rather than a plan change; private Apple APIs are allowed under a policy (D7). Phases split into sub-phases 0a–0d, 1a–1c, 2a–2b, 3a–3b, 4a–4b.
+- Spec sections affected: most; see the git diff of `docs/SPEC.md`.

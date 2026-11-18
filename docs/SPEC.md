@@ -35,7 +35,7 @@ Primary audience: people with many tabs open on 8–16 GB machines who are frust
 
 ### Non-goals (for now)
 - Writing our own HTML/CSS/JS engine. Phase 8 is the decision gate for that.
-- Mobile (iOS/Android).
+- Mobile (iOS/Android). Keeping `lwb-core` pure Rust keeps it reusable if a mobile app happens later. iOS requires WebKit (outside the EU/Japan exemptions), which our engine abstraction already supports.
 - Full Chrome Web Store compatibility on all platforms (see §8.7).
 - Built-in password manager or sync (users keep their existing password manager; sync is a later paid-tier candidate).
 - Paid code signing before positive tester feedback (§11).
@@ -201,7 +201,7 @@ Every backend-specific feature is reported through `EngineCaps`, and the policy 
 - Downloads go to a user-chosen folder and are never auto-opened. Make sure Mark-of-the-Web (Windows) / `com.apple.quarantine` (macOS) is set on downloaded files, setting it ourselves if the engine doesn't.
 - `NewWindowRequested`: open as a new tab, **except** popups that need `window.opener` (OAuth "Sign in with Google/Microsoft/Apple"). These keep the opener relationship (WebView2: assign `NewWindowRequestedEventArgs.NewWindow`; WebKit: return the new view from `createWebViewWith` / `create` signal). Phase 0b/0c must verify this works with a real Google sign-in.
 - The benchmark control channel (§9) is compiled only with a `bench` Cargo feature that release builds never enable, and is never reachable from web content.
-- Private Apple APIs (SPI) are allowed only with a DECISIONS entry, behind a runtime `respondsToSelector:` check with a public fallback (D7).
+- Private Apple APIs (SPI) are allowed only with a DECISIONS entry, behind a runtime `respondsToSelector:` check with a public fallback, and only inside code gated by the **`macos-spi` Cargo feature** (on for direct-download builds, off for any future Mac App Store build) (D7, DEC-004).
 
 ### 6.7 Storage
 SQLite file in the per-OS app data dir (`directories` crate), WAL mode. Tables (v1): `sessions`, `tabs` (incl. per-tab back/forward stack, scroll position, last-navigation-was-POST flag), `history`, `bookmarks`, `site_settings` (zoom, dark mode, keep-awake, blocker exceptions, permissions), `settings`. Session state is **saved on every change (debounced ~1 s)**, not only on exit, so crashes lose nothing. Engine profile data (cookies, cache) stays in the engine's own data store, pointed at our app data dir. **Private windows** use an ephemeral engine data store, and none of their tabs or history is written to SQLite. Migrations are versioned (`PRAGMA user_version`).
@@ -443,7 +443,7 @@ Evaluate Servo as an alternative backend behind the `Engine` trait, and decide w
 | D4 | Default search engine | Configurable; pick the default when a partnership exists | Open (Phase 4) |
 | D5 | Overlay mechanism | Grow the chrome view (§6.5) unless 0b says otherwise | Pending 0b |
 | D6 | Default hibernation preset | Balanced (5 min freeze / 30 min discard) | Open |
-| D7 | Private Apple APIs (mute, process attribution) | Allow with DECISIONS entry + runtime check + public fallback | Open |
+| D7 | Private Apple APIs (mute, process attribution) | Allowed behind the `macos-spi` feature + runtime check + public fallback | **Decided** (DEC-004) |
 | D8 | Earlier cheap Windows signing | Only if Smart App Control blocks testers (§11) | Open (Phase 4b) |
 | Q1 | Was Brave's Memory Saver on in the 6.5 GB baseline? | — | **Owner to check** |
 

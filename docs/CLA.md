@@ -1,6 +1,8 @@
 # Individual Contributor License Agreement
 
 > **Status: approved by the owner (2026-11-19) and in use through CLA Assistant.** Adapted from the Apache Software Foundation's Individual Contributor License Agreement (ICLA) v2.2, changed for a single-owner project whose code is released under the Functional Source License (FSL-1.1-ALv2). This is not legal advice. Have a lawyer review it before the project is commercialised (SPEC §5.1).
+>
+> **The signed text is the Gist, not this file.** CLA Assistant has contributors sign the Gist at <https://gist.github.com/TheYungStump/15ddc53ea5a904d6fb88822713a3f1b8> (revision `78a3224`, approved 2026-11-19). This file is a mirror of it. Change both together: CLA Assistant asks everyone to sign again whenever the Gist changes.
 
 Thank you for your interest in Lightweight Browser (the "Project"), owned by TheYungStump (the "Owner"). This agreement records the terms under which you contribute to the Project, so that the Owner can keep distributing the Project under its current license, relicense it, or dual-license it in the future (SPEC §5.1, DEC-001). It protects you as well as the Owner and the Project's users. It does not change your right to use your own Contributions for any other purpose.
 

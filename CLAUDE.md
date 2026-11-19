@@ -20,7 +20,7 @@ This repo is a lightweight, low-memory desktop browser in Rust (Windows primary,
 - Before committing: `cargo fmt --all`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`.
 - Never commit filter lists, API keys, or other secrets/large binaries.
 - The owner can't test on macOS by hand yet. Mark macOS work as "CI-built, not run" in `docs/STATUS.md`.
-- Don't include AI model names or identifiers in commits, code comments, or docs.
+- Don't include AI model names or identifiers in commits, code comments, or docs. **This includes `Co-Authored-By:` trailers:** leave out any trailer naming a model, even if your tooling adds one by default. When squash-merging, check that GitHub's suggested commit message doesn't add one back.
 
 ## Build and test commands
 The toolchain is pinned in `rust-toolchain.toml` (exact version); rustup installs it on first use. Bump it only deliberately, at the start of a phase, in its own commit, together with `rust-version` in the root `Cargo.toml`.

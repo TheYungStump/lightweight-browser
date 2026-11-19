@@ -47,7 +47,9 @@ Template:
   - **LGPL isn't on the cargo-deny allow-list** (owner). cargo-deny checks Rust crates only, never system libraries such as WebKitGTK, so "LGPL only for system libraries" needs no allow-list entry. A crate that needs LGPL gets a named `exceptions` entry with a reason.
   - **No third-party toolchain action in CI.** Runners ship rustup, and `rustup toolchain install` reads `rust-toolchain.toml`, so the toolchain is pinned by our own file. The remaining actions are first-party or widely used ones pinned to a major version (`actions/checkout@v7`, `Swatinem/rust-cache@v2`, `EmbarkStudios/cargo-deny-action@v2`).
   - **Linux CI packages:** `libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev`. wry's README and its own CI install only `libwebkit2gtk-4.1-dev`; tao and muda need `libgtk-3-dev`. Nothing else is required.
-  - **CLA Assistant has no committed config.** The app is configured in its web UI and points at `docs/CLA.md`. The owner enables it by hand.
+  - **CLA Assistant has no committed config.** The app is configured in its web UI. Contributors sign a **GitHub Gist** (revision `78a3224`), and `docs/CLA.md` mirrors it, so the two must change together. The owner enables it by hand.
+  - **Allow-list extra:** `Apache-2.0 WITH LLVM-exception` is allowed beyond the prompt's list. It's strictly more permissive than Apache-2.0 and common in the Rust ecosystem (e.g. `rustix`, `wasi`).
+  - **CI action pins:** `EmbarkStudios/cargo-deny-action` is pinned to the commit of `v2.1.2` (bundles cargo-deny 0.21.0), because a new cargo-deny release can break `deny.toml`. Bump it deliberately, like the toolchain.
   - Our own crates are `publish = false` and licensed `FSL-1.1-ALv2`. `deny.toml` ignores private crates for license checks.
 - Alternatives considered: the floating `stable` channel (not reproducible); `dtolnay/rust-toolchain` pinned to a SHA (works, but adds a third-party action for no gain).
 - Spec sections affected: §6.1 (MSRV policy refined), §10 Phase 0a.

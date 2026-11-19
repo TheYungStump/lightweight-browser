@@ -5,10 +5,11 @@ on:
   push:
     branches: [main]
 
-# A new push to the same PR or branch cancels the run it supersedes.
+# A new push to the same PR cancels the run it supersedes. Runs on `main` are
+# never cancelled, so every merged commit gets a complete result.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -22,6 +23,7 @@ jobs:
   check:
     name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -60,8 +62,11 @@ jobs:
   deny:
     name: cargo-deny
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: EmbarkStudios/cargo-deny-action@v2
+      # Pinned to the commit of v2.1.2 (bundles cargo-deny 0.21.0): a new
+      # cargo-deny release can break deny.toml. Bump deliberately (DEC-006).
+      - uses: EmbarkStudios/cargo-deny-action@70f81531115945ba6eb6b941ec9d39d063438eb9 # v2.1.2
         with:
           command: check

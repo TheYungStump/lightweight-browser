@@ -67,6 +67,11 @@ Measured with the benchmark in §9, same machine, fresh profiles.
 | Restoring a discarded tab (time to first paint, typical news site, cached) | ≤ 1.5 s |
 | Page-load time cost of our ad blocker (Windows, median over the standard set) | ≤ +5% vs blocker off |
 | Wrongly hibernated tabs (a tab hibernated while protected per §7.3 by a **trusted** signal) | **0**. Treat any occurrence as a bug |
+| Installer / download size | ≤ 15 MB Windows and macOS (the engine is part of the OS), ≤ 10 MB Linux `.deb`. For comparison, Chromium-based browser installers are typically 100 MB+ |
+| Cold start to a usable window (warm OS cache, empty session) | ≤ 1 s |
+| Keystroke to screen in the address bar | ≤ 16 ms |
+
+**Every target states its statistic** (median, p95, or max) and its measurement method in `bench/README.md`, written in 0d. **Budgets that can be measured reliably on CI runners** (installer size, shell binary size, cold start, shell-process memory with an empty window) **are checked in CI from the phase that makes them measurable, and a regression fails the build.** Shared runners are noisy, so CI checks use medians over many runs with a stated tolerance. Whole-browser memory targets are measured on the owner's machine with `lwb-bench`, not in CI.
 
 ## 5. Licensing and business model
 
@@ -200,10 +205,21 @@ Every backend-specific feature is reported through `EngineCaps`, and the policy 
 - Certificate errors → our interstitial with "go back" as the default. Never auto-proceed.
 - Downloads go to a user-chosen folder and are never auto-opened. Make sure Mark-of-the-Web (Windows) / `com.apple.quarantine` (macOS) is set on downloaded files, setting it ourselves if the engine doesn't.
 - `NewWindowRequested`: open as a new tab, **except** popups that need `window.opener` (OAuth "Sign in with Google/Microsoft/Apple"). These keep the opener relationship (WebView2: assign `NewWindowRequestedEventArgs.NewWindow`; WebKit: return the new view from `createWebViewWith` / `create` signal). Phase 0b/0c must verify this works with a real Google sign-in.
+- **Fuzzing:** every parser of untrusted input has a `cargo-fuzz` target from the phase that introduces it: page-channel messages, IPC messages, filter-list loading, bookmark/session import, `site_settings` values from disk. Fuzz targets run briefly in CI and longer locally before a release.
 - The benchmark control channel (§9) is compiled only with a `bench` Cargo feature that release builds never enable, and is never reachable from web content.
 - Private Apple APIs (SPI) are allowed only with a DECISIONS entry, behind a runtime `respondsToSelector:` check with a public fallback, and only inside code gated by the **`macos-spi` Cargo feature** (on for direct-download builds, off for any future Mac App Store build) (D7, DEC-004).
 
-### 6.7 Storage
+### 6.7 Command layer
+Every user-visible action is a **named command** dispatched through one place in `lwb-core`: `tab.new`, `tab.close`, `tab.activate`, `tab.keep_awake`, `tab.hibernate`, `nav.go`, `nav.back`, `find.start`, `zoom.set`, `settings.set`, `blocker.toggle_site`, and so on. The chrome view, keyboard accelerators, native menus and (later) the command palette all emit commands; there are no hidden actions.
+
+Why it's worth doing from Phase 1a:
+- **One path for every action**, so shortcuts, menus and the UI can't drift apart, and user-editable shortcuts are simply a keymap → command table.
+- **Testability:** command sequences can be replayed against `lwb-core` in unit tests, and the `bench` control channel (§9) is just a command transport instead of a separate API.
+- **Future surfaces at no extra cost:** a command palette (Phase 4a), and the AI toolkit (Phase 6) acting through the same commands, so everything an assistant does is visible, undoable where possible, and permission-checked.
+
+Commands are a versioned, serde-serialisable enum with typed parameters. Each command declares which callers may invoke it: chrome view, internal page, keyboard, bench transport, or (later) external automation. **No external automation surface (CLI control, JSON over a socket, MCP) ships enabled.** Adding one is a separate decision (D9), because remote control of a logged-in browser is a serious security risk.
+
+### 6.8 Storage
 SQLite file in the per-OS app data dir (`directories` crate), WAL mode. Tables (v1): `sessions`, `tabs` (incl. per-tab back/forward stack, scroll position, last-navigation-was-POST flag), `history`, `bookmarks`, `site_settings` (zoom, dark mode, keep-awake, blocker exceptions, permissions), `settings`. Session state is **saved on every change (debounced ~1 s)**, not only on exit, so crashes lose nothing. Engine profile data (cookies, cache) stays in the engine's own data store, pointed at our app data dir. **Private windows** use an ephemeral engine data store, and none of their tabs or history is written to SQLite. Migrations are versioned (`PRAGMA user_version`).
 
 ## 7. Memory management (core feature)
@@ -297,6 +313,7 @@ Protection is re-evaluated on every signal change and at every policy wake-up.
 - Per-site toggle in the address bar, blocked-count badge.
 - Phase 3a also evaluates an alternative on Windows: a declarativeNetRequest (MV3) blocker loaded as a WebView2 browser extension, which runs inside Chromium with no per-request round trip. Licensing (GPL component loaded separately) needs a lawyer's check before shipping.
 - No promises about YouTube ad blocking. It is an arms race, best effort only.
+- **Scriptlet bundle licensing:** popular scriptlet sets are GPL-licensed (uBlock Origin's) or mixed (Brave's adblock-resources includes uBO-derived files). Phase 3a checks the license of whatever bundle we ship with before bundling it, and records it in DECISIONS. Our own scriptlets, written from scratch, are the fallback.
 
 ### 8.2 Dark mode
 1. **Native preference:** tell pages the user prefers dark (`prefers-color-scheme: dark`). WebView2 `PreferredColorScheme`; WebKit follows the app/window appearance.
@@ -376,12 +393,13 @@ The same spike app and checklist, adapted, in `docs/spikes/phase0c-macos.md` and
 
 **0d. Memory probe + benchmark v0 + baselines**
 `lwb-memprobe` (Windows implementation first; macOS/Linux stubs following §7.6) and `lwb-bench` v0 (launch other browsers with fresh profiles + tab set, sample, report). Fix the two tab-set files. Produce Windows baselines for Brave (Memory Saver off/on), Chrome (off/on) and Edge on the owner's machine. The orchestrator then recalibrates §4.
+Also: `bench/README.md` (statistic + method per §4 target), and a CI job that reports installer-independent budgets measurable so far (shell binary size; cold start of the spike or app if available), failing on regression beyond the stated tolerance.
 - **Acceptance:** reproducible within ±10% across 3 runs; results committed in `bench/results/`.
 
 ### Phase 1: Core browser
-**1a. Engine traits + Windows backend + browsing basics:** the `Engine`/`EngineView` traits (§6.3) and the Windows backend; view kinds and view swapping at the internal/web boundary (§6.6); window with chrome view (tab strip: new/close/switch/reorder/pinned; address bar: URL or search; back/forward/reload/stop; loading indicator; title + favicon); native accelerators; `lwb://newtab`, `lwb://about`; new-window requests → new tab (with opener popups); overlay mechanism (§6.5); HiDPI.
+**1a. Engine traits + Windows backend + browsing basics:** the `Engine`/`EngineView` traits (§6.3) and the Windows backend; the command layer (§6.7), with every 1a action going through it; view kinds and view swapping at the internal/web boundary (§6.6); window with chrome view (tab strip: new/close/switch/reorder/pinned; address bar: URL or search; back/forward/reload/stop; loading indicator; title + favicon); native accelerators; `lwb://newtab`, `lwb://about`; new-window requests → new tab (with opener popups); overlay mechanism (§6.5); HiDPI.
 
-**1b. Storage + essentials:** `lwb-storage`; settings + `lwb://settings`; session save (debounced) + lazy restore (minimal Discarded state, §7.1); history recording; downloads; crashed-tab page; our page context menu; permission prompts + per-site storage; fullscreen; certificate interstitial; HTTP auth; JS dialogs; find in page; per-site zoom; DevTools setting.
+**1b. Storage + essentials:** `lwb-storage`; fuzz targets for the IPC and page-channel message parsers; settings + `lwb://settings`; session save (debounced) + lazy restore (minimal Discarded state, §7.1); history recording; downloads; crashed-tab page; our page context menu; permission prompts + per-site storage; fullscreen; certificate interstitial; HTTP auth; JS dialogs; find in page; per-site zoom; DevTools setting.
 - **Acceptance (end of 1b):** the owner browses normally on Windows for a day (YouTube, Gmail, GitHub, a banking site, Google sign-in popup) with no blocking bugs. Empty-window memory recorded.
 
 **1c. macOS + Linux backends** to feature parity with 1a/1b where `EngineCaps` allow. Acceptance: builds and launches in CI; manual smoke test on Linux (Wayland); macOS "CI-built, not run" until the MacBook arrives.
@@ -398,19 +416,20 @@ The same spike app and checklist, adapted, in `docs/spikes/phase0c-macos.md` and
 **3b. Dark mode + audio** (§8.2, §8.3). Acceptance: forced dark is usable on 10 sample sites; volume boost works on YouTube; mute works on all 3 OSes (macOS via D7 decision).
 
 ### Phase 4: Daily-driver polish and tester release
-**4a. Features:** everything in the §8.4 Phase 4 list, final name/icon if decided (D2), About page with donation/sponsor links.
+**4a. Features:** everything in the §8.4 Phase 4 list, a command palette listing every command (§6.7), user-editable keyboard shortcuts, final name/icon if decided (D2), About page with donation/sponsor links.
 
-**4b. Release engineering:** packaging with `cargo-packager` (Windows NSIS/MSI unsigned; macOS `.dmg` with an ad-hoc signed `.app`; Linux `.deb` + AppImage); checksums + minisign signatures; update notifier (§8.5); crash diagnostics (§8.6); `docs/TESTERS.md` (§11); in-app "Send feedback" link.
+**4b. Release engineering:** CI check of the installer-size budget (§4); packaging with `cargo-packager` (Windows NSIS/MSI unsigned; macOS `.dmg` with an ad-hoc signed `.app`; Linux `.deb` + AppImage); checksums + minisign signatures; update notifier (§8.5); crash diagnostics (§8.6); `docs/TESTERS.md` (§11); in-app "Send feedback" link.
 - **Acceptance:** builds install on a clean Windows 11 machine (incl. the Smart App Control note) and on macOS by following `TESTERS.md`; first 5–10 external testers onboarded.
 
 ### Phase 5: Extensions (§8.7)
 ### Phase 6: AI toolkit and credits (§8.8, after `docs/AI-SPEC.md`)
 ### Phase 7: Growth and revenue
-Website, search-partnership outreach, sponsorships, code signing + notarization once tester feedback is positive, auto-update, optional sync.
+Website, `docs/MARKET.md` (sourced user complaints about browser memory use and about Memory Saver unloading tabs people needed, mapped to our features; also where to find first users, e.g. r/browsers, r/pcmasterrace, Show HN, after checking each community's self-promotion rules), search-partnership outreach, sponsorships, code signing + notarization once tester feedback is positive, auto-update, optional sync.
 ### Phase 8: Engine research (decision gate)
 Evaluate Servo as an alternative backend behind the `Engine` trait, and decide whether owning an engine is worth it. Output: a report and recommendation, not a commitment.
 
 ## 11. Distribution before code signing
+- **Free signing programmes for open-source projects (e.g. SignPath Foundation) generally require an OSI-approved license.** FSL isn't OSI-approved, so assume we don't qualify. Check again, but plan around paid signing.
 - Windows builds are unsigned. macOS builds are ad-hoc signed (Apple Silicon requires at least an ad-hoc signature; `codesign --force --deep -s -` on the `.app`) and not notarized.
 - `TESTERS.md` explains: Windows SmartScreen ("More info" → "Run anyway"); **Smart App Control** (on clean Windows 11 installs it can block unsigned apps outright with no "Run anyway"; testers with SAC on can't run our builds until we sign); macOS ("Open Anyway" in System Settings → Privacy & Security, or `xattr -dr com.apple.quarantine`); how to verify checksums and signatures; what data we collect (none).
 - **Signing decision (D8):** paid signing waits for positive tester feedback, *unless* Smart App Control blocks a meaningful share of testers. Then evaluate Microsoft's low-cost cloud signing service (roughly $10/month for eligible individuals at last check; verify current name, price and eligibility at that time).
@@ -445,6 +464,7 @@ Evaluate Servo as an alternative backend behind the `Engine` trait, and decide w
 | D6 | Default hibernation preset | Balanced (5 min freeze / 30 min discard) | Open |
 | D7 | Private Apple APIs (mute, process attribution) | Allowed behind the `macos-spi` feature + runtime check + public fallback | **Decided** (DEC-004) |
 | D8 | Earlier cheap Windows signing | Only if Smart App Control blocks testers (§11) | Open (Phase 4b) |
+| D9 | External automation surface (CLI control, socket API, MCP) | Not before Phase 6; opt-in only, local-only, per-session approval | Open |
 | Q1 | Was Brave's Memory Saver on in the owner's baseline? | — | **Answered:** off; 8.1 GB / 64 processes |
 
 ## 14. Workflow (orchestration)

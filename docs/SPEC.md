@@ -20,7 +20,7 @@ It achieves this by:
 3. Building in what people otherwise install extensions for: ad/tracker blocking, dark mode, volume boost.
 4. Showing the user, honestly, where their memory is going.
 
-Primary audience: people with many tabs open on 8–16 GB machines who are frustrated by browser memory use. The owner's own baseline: **Brave at ~6.5 GB** with their usual tabs (whether Brave's Memory Saver was on: open question Q1, §13).
+Primary audience: people with many tabs open on 8–16 GB machines who are frustrated by browser memory use. The owner's own baseline: **Brave at ~8.1 GB (64 processes, Memory Saver off)** with their usual tabs, measured in Windows Task Manager on 2026-11-19.
 
 ## 2. Goals and non-goals
 
@@ -63,7 +63,7 @@ Measured with the benchmark in §9, same machine, fresh profiles.
 | Standard 20-tab set, hibernation **off**, **Windows** | ≤ 100% of Brave, ≤ 85% of Chrome |
 | Standard 20-tab set, hibernation **off**, **macOS** | ≤ 85% of Brave |
 | **Realistic mix** (§9: 20 tabs, 5 of which must stay alive), 30 min, default preset | ≤ 60% of Brave **with Memory Saver on**; ≤ 35% of Brave with it off |
-| Owner's real-world usage (Brave ~6.5 GB) | ≤ 2 GB |
+| Owner's real-world usage (Brave ~8.1 GB, Memory Saver off) | ≤ 2 GB |
 | Restoring a discarded tab (time to first paint, typical news site, cached) | ≤ 1.5 s |
 | Page-load time cost of our ad blocker (Windows, median over the standard set) | ≤ +5% vs blocker off |
 | Wrongly hibernated tabs (a tab hibernated while protected per §7.3 by a **trusted** signal) | **0**. Treat any occurrence as a bug |
@@ -330,7 +330,7 @@ Optional and **off by default**. When off, it loads nothing and costs zero memor
 
 ## 9. Benchmark methodology (`tools/lwb-bench`)
 - Launches each browser with a **fresh profile** and a fixed URL list, waits for loads to settle, then samples memory (§7.6 metrics, whole process tree) every 5 s for 5 min. Reports median and p90. 3 runs per configuration; report the median of the medians. Also records page-load times (for the blocker-overhead target).
-- **Required browsers/configs:** ours (hibernation off; default preset), **Brave with Memory Saver off and on**, Chrome (Memory Saver off and on), Edge (Windows). Optional extras: Firefox, Safari (macOS, manual). Fresh profiles, no extensions, default settings otherwise. Brave's built-in blocking stays on (noted in results).
+- **Required browsers/configs:** ours (hibernation off; default preset), **Brave with Memory Saver off, Balanced (the default) and Maximum**, Chrome (same three), Edge (Windows). The bench sets the mode explicitly in each fresh profile, so the owner's personal browser settings don't affect results. Headline comparisons use the default (Balanced); Maximum is always reported alongside, as the strongest competitor configuration. Optional extras: Firefox, Safari (macOS, manual). Fresh profiles, no extensions, default settings otherwise. Brave's built-in blocking stays on (noted in results).
 - **Autoplay:** fresh profiles block unmuted autoplay, so the YouTube tab is started the same way in every browser: a scripted click. If impossible, use `--autoplay-policy=no-user-gesture-required` for all Chromium-based browsers and document it.
 - **Tab sets** (`bench/tabs-standard.txt`, `bench/tabs-realistic.txt`, URLs fixed and versioned in Phase 0d):
   - *Standard (20, logged out):* YouTube video (playing), Wikipedia, two news sites, Reddit thread, GitHub repo, Stack Overflow, MDN, Google Maps, shopping product page, recipe site (ad-heavy), Twitch channel, a docs site, a blog, weather, sports, long-form article, image-heavy site, Excalidraw, a search results page.
@@ -445,7 +445,7 @@ Evaluate Servo as an alternative backend behind the `Engine` trait, and decide w
 | D6 | Default hibernation preset | Balanced (5 min freeze / 30 min discard) | Open |
 | D7 | Private Apple APIs (mute, process attribution) | Allowed behind the `macos-spi` feature + runtime check + public fallback | **Decided** (DEC-004) |
 | D8 | Earlier cheap Windows signing | Only if Smart App Control blocks testers (§11) | Open (Phase 4b) |
-| Q1 | Was Brave's Memory Saver on in the 6.5 GB baseline? | — | **Owner to check** |
+| Q1 | Was Brave's Memory Saver on in the owner's baseline? | — | **Answered:** off; 8.1 GB / 64 processes |
 
 ## 14. Workflow (orchestration)
 1. **Spec review:** fresh session(s) review this spec; findings go in `docs/reviews/`. The orchestrator folds them in, and the owner approves → status `APPROVED v1.0`.

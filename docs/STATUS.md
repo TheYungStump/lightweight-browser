@@ -6,7 +6,7 @@
 | 0a: Repo foundation | Ready to start after approval | `phase-0a-foundation` | Prompt: `docs/prompts/phase-0a.md` |
 | 0b: Windows engine spike | Ready to start after approval | `phase-0b-windows-spike` | Prompt: `docs/prompts/phase-0b.md`. Can run in parallel with 0a |
 | 0c: macOS + Linux spike | Not started | — | Hands-on macOS checks wait for the MacBook |
-| 0d: Memory probe + bench v0 + baselines | Not started | — | Needs Q1 answered (Brave Memory Saver) |
+| 0d: Memory probe + bench v0 + baselines | Not started | — | |
 | 1a / 1b / 1c: Core browser | Not started | — | |
 | 2a / 2b: Memory management | Not started | — | |
 | 3a / 3b: Built-in features | Not started | — | |

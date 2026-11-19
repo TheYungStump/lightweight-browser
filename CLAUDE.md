@@ -23,4 +23,19 @@ This repo is a lightweight, low-memory desktop browser in Rust (Windows primary,
 - Don't include AI model names or identifiers in commits, code comments, or docs.
 
 ## Build and test commands
-_To be filled in by Phase 0a._
+The toolchain is pinned in `rust-toolchain.toml` (exact version); rustup installs it on first use. Bump it only deliberately, at the start of a phase, in its own commit, together with `rust-version` in the root `Cargo.toml`.
+
+```bash
+cargo build --workspace                                  # build everything
+cargo run -p lwb-app                                     # run the browser (Phase 0a: prints a version line)
+cargo fmt --all                                          # format (CI runs `cargo fmt --all --check`)
+cargo clippy --workspace --all-targets -- -D warnings    # lint; warnings fail CI
+cargo test --workspace                                   # all tests
+cargo test -p lwb-core                                   # one crate's tests
+cargo deny check                                         # licenses, advisories, bans (install: cargo install cargo-deny --locked)
+cargo build --release -p lwb-app                         # size/memory-tuned release build
+```
+
+- Linux needs `libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev` (see `CONTRIBUTING.md`).
+- `spikes/*` are standalone projects outside the workspace. Build them from their own directory.
+- CI (`.github/workflows/ci.yml`) runs fmt, clippy, build and test on Windows, macOS and Linux, plus `cargo deny check` on Linux.

@@ -1,0 +1,7 @@
+# Exact pin so every machine and CI build with the same compiler.
+# Bumps are deliberate: at the start of a phase, in their own commit, together
+# with `rust-version` in Cargo.toml (SPEC §6.1).
+[toolchain]
+channel = "1.100.0"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

@@ -1,0 +1,9 @@
+/target/
+**/target/
+*.pdb
+.DS_Store
+# Per-machine Claude Code settings (local permissions); never committed.
+.claude/settings.local.json
+# Filter lists are downloaded at runtime and never committed (SPEC §5.1).
+*.filterlist
+/bench/results/raw/

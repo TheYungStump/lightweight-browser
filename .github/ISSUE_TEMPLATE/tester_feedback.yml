@@ -1,0 +1,62 @@
+name: Tester feedback
+description: Feedback from testing a pre-release build, including memory observations.
+labels: [tester-feedback]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for testing! Rough notes are fine. Please don't include private data (logged-in URLs, account names).
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Linux (Wayland)
+        - Linux (X11)
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version
+      placeholder: e.g. Windows 11 23H2, macOS 15.1, Ubuntu 24.04
+    validations:
+      required: true
+  - type: input
+    id: ram
+    attributes:
+      label: Total RAM on this machine
+      placeholder: e.g. 16 GB
+  - type: input
+    id: version
+    attributes:
+      label: Browser version
+      description: From lwb://about, or the release you downloaded.
+    validations:
+      required: true
+  - type: textarea
+    id: memory
+    attributes:
+      label: Memory observations
+      description: |
+        How many tabs were open, which preset you used, and what our browser used vs your usual browser
+        (with that browser's name, and whether its Memory Saver was on). Say where you read the numbers
+        (Task Manager, Activity Monitor, lwb://memory).
+      placeholder: |
+        ~30 tabs, Balanced preset. Ours: 1.4 GB (Task Manager). Brave, same tabs, Memory Saver off: 4.2 GB.
+  - type: textarea
+    id: hibernation
+    attributes:
+      label: Did a tab get hibernated when you didn't want it to?
+      description: Which site, what you were doing in it (music, call, form...), and how long you'd been away.
+  - type: textarea
+    id: general
+    attributes:
+      label: Anything else
+      description: What worked, what broke, what annoyed you.
+    validations:
+      required: true

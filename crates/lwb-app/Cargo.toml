@@ -1,0 +1,12 @@
+[package]
+name = "lwb-app"
+description = "The browser binary: window, event loop and wiring."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

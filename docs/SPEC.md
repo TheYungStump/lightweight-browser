@@ -449,6 +449,6 @@ Evaluate Servo as an alternative backend behind the `Engine` trait, and decide w
 
 ## 14. Workflow (orchestration)
 1. **Spec review:** fresh session(s) review this spec; findings go in `docs/reviews/`. The orchestrator folds them in, and the owner approves → status `APPROVED v1.0`.
-2. **Per sub-phase:** the owner starts a local implementation session with `docs/prompts/phase-<id>.md` (written by the orchestrator, normally once the previous sub-phase is merged). The implementer works on `phase-<id>-<slug>`, keeps `docs/STATUS.md` updated, records deviations in `docs/DECISIONS.md`, and opens a PR.
+2. **Per sub-phase:** the owner starts a local implementation session (ideally in plan mode) with `docs/prompts/phase-<id>.md`. The session first follows `docs/prompts/_kickoff.md`: an orientation check of the code it builds on, then a plan and clarifying questions, and it waits for the owner's go-ahead (questions the owner can't answer go to the orchestrator). The prompt is written by the orchestrator, normally once the previous sub-phase is merged. The implementer works on `phase-<id>-<slug>`, keeps `docs/STATUS.md` updated, records deviations in `docs/DECISIONS.md`, and opens a PR.
 3. **Review:** a fresh review session checks the PR against this spec's acceptance criteria and §6.6 security rules (prompt: `docs/prompts/review-pr.md`). The orchestrator does a final pass; the owner merges.
 4. If a session's context gets long, it stops at a clean point and writes a handoff note in `docs/STATUS.md`.

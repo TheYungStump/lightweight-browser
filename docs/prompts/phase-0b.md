@@ -8,6 +8,8 @@ You are implementing **Phase 0b (Windows engine spike)** of a low-memory desktop
 
 Work on a new branch `phase-0b-windows-spike` from `main`.
 
+**First follow `docs/prompts/_kickoff.md`: do the orientation check, post your plan and questions, and wait for the owner's go-ahead before writing any code.**
+
 Build a **standalone** throwaway app in `spikes/engine-spike/` (its own `Cargo.toml`, not part of the workspace) using `tao` + `wry` (current versions), plus `webview2-com`/`windows` via wry's `WebViewExtWindows` for anything wry doesn't expose. Code quality can be spike-grade, but every `unsafe` needs a `// SAFETY:` comment, and the code must be readable enough for Phase 1a to borrow from.
 
 The app: one window with a chrome view (simple HTML strip: two "tab" buttons, an address input, a few test buttons) and 2+ content views below it, switchable. Add whatever test buttons/logging you need. Log results to the console and to a log file.

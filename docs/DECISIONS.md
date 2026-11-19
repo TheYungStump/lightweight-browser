@@ -33,3 +33,9 @@ Template:
 - Decision: private APIs are allowed only behind the `macos-spi` Cargo feature, enabled for direct-download builds and disabled for any App Store build. Each use needs a runtime `respondsToSelector:` check and a public fallback, so the app works with the feature off.
 - Alternatives considered: no private APIs at all (loses per-tab mute and per-tab memory on macOS); unrestricted use (blocks the App Store later).
 - Spec sections affected: §2 non-goals, §6.6, §13 D7.
+
+## DEC-005: Lessons carried over from the owner's previous project  (2026-11-19, spec)
+- Context: the owner's screenwriting app spec worked well. Reviewed it for practices that fit this project.
+- Decision: added (1) a command layer: every action is a named command through one dispatcher (§6.7, Phase 1a); (2) installer-size, cold-start and input-latency targets, a stated statistic for every target, and CI-enforced budgets where CI can measure reliably (§4, 0d, 4b); (3) fuzz targets for every untrusted-input parser (§6.6); (4) a scriptlet-bundle license check (§8.1); (5) a note that free open-source signing programmes likely exclude FSL (§11); (6) a sourced market/pain-point doc in Phase 7; (7) D9: no external automation surface without a separate decision.
+- Not carried over: clean-room process (we aren't recreating a specific product), GPL licensing (DEC-001), pay-what-you-want/paid store builds (doesn't fit a browser's revenue model).
+- Spec sections affected: §4, §6.6, §6.7 (new), §6.8 (renumbered storage), §8.1, §10, §11, §13.

@@ -51,3 +51,9 @@ Template:
   - Our own crates are `publish = false` and licensed `FSL-1.1-ALv2`. `deny.toml` ignores private crates for license checks.
 - Alternatives considered: the floating `stable` channel (not reproducible); `dtolnay/rust-toolchain` pinned to a SHA (works, but adds a third-party action for no gain).
 - Spec sections affected: §6.1 (MSRV policy refined), §10 Phase 0a.
+
+## DEC-007: Review sessions may be launched by the implementation session  (2026-11-19, phase 0a)
+- Context: SPEC §14 says a fresh session reviews each PR, but not who starts it. The desktop app lets one Claude Code session start another, and the owner asked to use that for reviews.
+- Decision: once a PR is open and CI is green, the owner may ask the implementation session to start the review as a separate session. It gets **fresh context** (no fork of the implementer's conversation), its **own worktree**, and only the filled-in `docs/prompts/review-pr.md` prompt. The implementer doesn't pass on its own findings or edit the review. Starting the review by hand stays equally valid.
+- Alternatives considered: owner-started sessions only (more manual steps); a forked session (would inherit the implementer's reasoning and defeat the clean-context rule).
+- Spec sections affected: §14 step 3; `docs/prompts/_kickoff.md` step 4.

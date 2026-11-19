@@ -8,6 +8,8 @@ You are implementing **Phase 0a (repo foundation)** of a low-memory desktop brow
 
 Work on a new branch `phase-0a-foundation` from `main`.
 
+**First follow `docs/prompts/_kickoff.md`: do the orientation check, post your plan and questions, and wait for the owner's go-ahead before writing any code.**
+
 Deliver:
 1. **Cargo workspace** matching SPEC §6.2: crates `lwb-app` (binary that prints a version line and exits for now), `lwb-core`, `lwb-engine`, `lwb-memprobe`, `lwb-blocker`, `lwb-storage` (libraries with a placeholder module and one trivial test each), plus `tools/lwb-bench` (binary stub). Exclude `spikes/*` from the workspace (spikes are standalone projects). Edition 2024; set `rust-version` to the current stable. Shared lints in `[workspace.lints]` (deny `unsafe_op_in_unsafe_fn`; clippy `all` warn). Add a release profile tuned for size and memory (`lto = "thin"`, `codegen-units = 1`, `panic = "abort"` is fine for the app binary, `strip = true`), and say in the PR why each setting was chosen.
 2. **Tooling:** `rustfmt.toml`, `.editorconfig`, `rust-toolchain.toml` pinned to stable, `deny.toml` for `cargo-deny`: license allow-list (MIT, Apache-2.0, BSD-2/3, ISC, Zlib, Unicode-3.0, MPL-2.0, LGPL only for system libraries; deny GPL/AGPL in our dependency tree) + advisories + bans on duplicate major versions as warnings.

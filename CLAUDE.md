@@ -5,7 +5,7 @@ This repo is a lightweight, low-memory desktop browser in Rust (Windows primary,
 ## Before you write any code
 1. Read `docs/SPEC.md`. It is the source of truth. Read in full at least §6 (architecture), §7 (memory management), and the section for your phase in §10.
 2. Read `docs/STATUS.md` (current phase, handoff notes) and `docs/DECISIONS.md` (deviations already agreed).
-3. If your session was started from a prompt in `docs/prompts/`, follow it.
+3. If your session was started from a prompt in `docs/prompts/`, follow it, starting with `docs/prompts/_kickoff.md` (orientation check, then plan + questions, then wait for the go-ahead).
 
 ## Rules
 - **Don't silently diverge from the spec.** If an API doesn't exist or a design doesn't work, record the problem and your chosen alternative in `docs/DECISIONS.md` and call it out in the PR description.

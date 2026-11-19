@@ -16,4 +16,6 @@ Review the spec critically, as a senior browser/systems engineer would. Don't wr
 6. **Phase sizing:** is each phase a sensible size for 1–3 implementation sessions? Suggest splits.
 7. **Licensing/business** (§5): factual errors only (not legal advice).
 
-Output a review in `docs/reviews/spec-review-1.md` with: a summary verdict (approve / approve with changes / rework), then findings grouped as **Blocking**, **Should fix**, **Nice to have**. Each finding gets the spec section, the problem, evidence/source, and a concrete suggested change. Commit it on a branch named `review/spec-1` and push. Don't edit `SPEC.md` yourself.
+Also read earlier reviews in `docs/reviews/` and don't repeat findings already addressed.
+
+Output a review in `docs/reviews/spec-review-<next number>.md` with: a summary verdict (approve / approve with changes / rework), then findings grouped as **Blocking**, **Should fix**, **Nice to have**. Each finding gets the spec section, the problem, evidence/source, and a concrete suggested change. Commit it on a branch named `review/spec-<next number>` and push. Don't edit `SPEC.md` yourself.

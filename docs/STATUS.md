@@ -2,7 +2,7 @@
 
 | Phase | Status | Branch / PR | Notes |
 |---|---|---|---|
-| Spec | v0.2, owner gave the go-ahead to implement (2026-11-18) | — | Review 1 incorporated. The spec header still says DRAFT; the orchestrator updates it |
+| Spec | **v0.3 in review** (2026-11-20): positioning, never-lose-work, AI slider, onboarding, spaces | `spec-v0.3` | DEC-008 to DEC-013, from `docs/research/2026-11-browser-positioning.md`. v0.2 had the owner's go-ahead to implement (2026-11-18). 0b should start after this merges: it adds 0b checklist items |
 | 0a: Repo foundation | **Done**, ready to merge (CI green; review: approve with changes, fixed; owner checklist run) | `phase-0a-foundation`, PR #4 | Workspace (7 stub crates), tooling, cargo-deny, LICENSE (FSL-1.1-ALv2), CLA (approved), CONTRIBUTING, issue templates, 3-OS CI. See DEC-006 |
 | 0b: Windows engine spike | Ready to start after approval | `phase-0b-windows-spike` | Prompt: `docs/prompts/phase-0b.md`. Can run in parallel with 0a |
 | 0c: macOS + Linux spike | Not started | — | Hands-on macOS checks wait for the MacBook |
@@ -15,6 +15,9 @@
 
 ## Current handoff notes
 _Implementation sessions: write what you finished, what's half-done, and what the next session should do first._
+
+**Spec v0.3 (2026-11-20):** documentation only, on `spec-v0.3`. Applies the owner's decisions from the positioning research: headline and §1 rewrite, comparison against competitors' most aggressive memory savers, form/scroll capture and restore (§7.5) with a form-restore suite in 2a, a 500-tab restore test in 1b, tab search in 2b, auto-archive and onboarding in 4a, the AI slider (§8.8), spaces as 5a and extensions as 5b, three new 0b checklist items, new risks, and D10–D15 (D9 widened). The research report is committed at `docs/research/2026-11-browser-positioning.md`.
+- **For 0b:** start from `main` after this merges. The §10 Phase 0b checklist gains WebView2 telemetry, DRM playback and Job Object/EcoQoS items, and `docs/prompts/phase-0b.md` already says to cover every checklist item.
 
 **Phase 0a (2026-11-18):** finished; nothing half-done. `docs/testing/phase-0a.md` was run on Windows: the owner did every step except the lint check, which the implementation session ran (the `unsafe_op_in_unsafe_fn` violation fails with E0133, then reverted).
 - The workspace builds with toolchain `1.100.0` (pinned exactly, DEC-006). Each crate has a placeholder module and one test. `lwb-app` and `lwb-bench` print a version line.

@@ -1,6 +1,6 @@
 # Lightweight Browser — Project Specification
 
-> **Status:** DRAFT v0.2 — review 1 (`docs/reviews/spec-review-1.md`) incorporated; awaiting owner approval.
+> **Status:** DRAFT v0.3 — v0.2 (review 1 incorporated) plus the owner's positioning decisions from the research report `docs/research/2026-11-browser-positioning.md` (DEC-008 to DEC-013).
 > **Working name:** "Lightweight Browser" (crate prefix `lwb`). The final name is an open decision (§13). Renaming is cheap until Phase 4.
 > **Owner:** project owner (human). **Orchestrator:** cloud Claude session. **Implementers:** local Claude Code sessions, one per sub-phase.
 
@@ -12,26 +12,38 @@ Items marked **(verify)** are believed correct but must be confirmed in the Phas
 
 ## 1. Vision
 
-A fast, private, cross-platform desktop browser whose defining feature is **using dramatically less RAM than Chrome, Brave or Edge for real-world browsing**, without making the user babysit their tabs.
+**Headline: "The most memory-efficient browser that never loses your work."** (DEC-008)
 
-It achieves this by:
-1. Using the operating system's own web engine instead of bundling another copy of Chromium. This is a real gain on macOS and Linux; on Windows, WebView2 is itself Chromium, so the gains there come from points 2–3.
-2. Managing tabs aggressively but *intelligently*: lazy session restore, then freezing and unloading background tabs, while tabs the user is actually using (a podcast playing in the background, a video call, a half-filled form) are never touched. Brave and Chrome already discard tabs ("Memory Saver"). We compete by being **smarter about what not to unload, and transparent about why**.
-3. Building in what people otherwise install extensions for: ad/tracker blocking, dark mode, volume boost.
-4. Showing the user, honestly, where their memory is going.
+Saving memory alone doesn't set us apart. Brave, Chrome and Edge already discard background tabs ("Memory Saver", "Sleeping tabs"). The owner's own test (Windows Task Manager, usual tabs): Brave at **8.1 GB** (64 processes) with Memory Saver off dropped to **2.6 GB** on Maximum. But every shipping tab discarder treats a discarded tab as "reload from the URL": typed text, flow state and scroll position are lost, and users turn the feature off after losing work (research report, first section).
 
-Primary audience: people with many tabs open on 8–16 GB machines who are frustrated by browser memory use. The owner's own baseline: **Brave at ~8.1 GB (64 processes, Memory Saver off)** with their usual tabs, measured in Windows Task Manager on 2026-11-19.
+Our difference: **as lean as Memory Saver on its most aggressive setting, but tabs you're using are never put to sleep, and sleeping tabs come back where you left them.** Hibernation safe enough to leave on.
+
+How we get there:
+1. **Don't sleep tabs holding work** (the primary guarantee, §7.3): a podcast playing in the background, a video call, a half-filled form, a download. Every protected tab shows why it is protected.
+2. **Restore what we can when a tab was slept anyway** (§7.5): form contents, scroll position, and a screenshot while the page reloads. We're honest about the limits.
+3. **Lean by design:** the operating system's own web engine instead of another bundled Chromium (a real gain on macOS and Linux; on Windows, WebView2 is itself Chromium, so the gains there come from tab management), lazy session restore, and freezing/unloading idle background tabs.
+4. **Transparency as the proof:** `lwb://memory` shows where memory goes and why each tab is awake or asleep, and our public benchmark compares against competitors *with their savers at the most aggressive setting* (§9).
+5. Built in, so nobody needs extensions for them: ad/tracker blocking, dark mode, volume boost.
+
+**Brand tone: calm.** No AI unless the user turns it on (§8.8), no crypto, no shopping features, no news feeds, no telemetry by default. The "no telemetry" claim covers our code; whether it also holds for the WebView2 runtime on Windows is checked in Phase 0b, and public wording follows that result.
+
+**First audiences:**
+- people with many tabs open (on 8–16 GB machines) who are frustrated by browser memory use, or who turned Memory Saver off because it lost their work;
+- people on older or low-RAM PCs: 8 GB machines, and Windows 10, which keeps WebView2 runtime updates until at least October 2028 (research report). This is an audience, not the differentiator: they can already turn on Brave Maximum.
+
+**Supporting claims only, never headlines:** battery life, privacy, built-in ad blocking.
 
 ## 2. Goals and non-goals
 
 ### Goals
 - G1. Daily-driver-quality browsing on Windows, macOS and Linux desktop.
-- G2. Measurably lower memory than Brave/Chrome on a reproducible benchmark (§9), with published results.
-- G3. Smart tab hibernation and a user-set memory budget that protects tabs that are in use.
+- G2. Memory use **at or below Brave and Edge with their memory savers on the most aggressive setting**, on a reproducible benchmark (§9), with published results.
+- G3. **Never lose the user's work:** tabs that are in use are never hibernated (§7.3), and a tab that was hibernated anyway comes back with its form contents and scroll position (§7.5). Smart hibernation and a user-set memory budget make this the default, not a setting to fear.
 - G4. Built-in ad/tracker blocking, dark mode, per-tab mute and volume boost.
-- G5. Privacy by default: no telemetry unless the user opts in; private windows; Global Privacy Control.
+- G5. Calm and private by default: no telemetry unless the user opts in; no AI unless the user turns it on; no crypto, shopping features or news feeds; private windows; Global Privacy Control.
 - G6. An architecture that lets us swap or add web engines later (e.g. Servo) without rewriting the browser.
-- G7. Later: an extension system, then an optional AI toolkit that costs **zero memory when unused**.
+- G7. Heavy-tab usability: a 500-tab session restores reliably, tab search covers sleeping tabs, optional auto-archive, spaces.
+- G8. Later: an extension system, then optional AI behind one slider that **defaults to "No AI"** and costs **zero memory** there (§8.8). Updates never turn AI on.
 
 ### Non-goals (for now)
 - Writing our own HTML/CSS/JS engine. Phase 8 is the decision gate for that.
@@ -39,13 +51,15 @@ Primary audience: people with many tabs open on 8–16 GB machines who are frust
 - Full Chrome Web Store compatibility on all platforms (see §8.7).
 - Built-in password manager or sync (users keep their existing password manager; sync is a later paid-tier candidate).
 - Paid code signing before positive tester feedback (§11).
+- AI agents that act on pages (click, type, submit, navigate on the user's behalf), until D9 decides otherwise.
+- A bundled local AI model by default (it would contradict the memory headline; D13).
 
 ## 3. Platforms
 
 | Platform | Minimum | Engine | Priority |
 |---|---|---|---|
-| Windows | Windows 10 22H2, Windows 11 (x64; ARM64 later) | Microsoft Edge WebView2 (Evergreen runtime) | **Primary**: owner's main machine |
-| macOS | macOS 13 Ventura+ (Apple Silicon; Intel best-effort) | WKWebView | High (no hands-on testing until the owner's MacBook arrives) |
+| Windows | Windows 10 22H2 (WebView2 runtime updates until at least Oct 2028; §12), Windows 11 (x64; ARM64 later) | Microsoft Edge WebView2 (Evergreen runtime) | **Primary**: owner's main machine |
+| macOS | macOS 13 Ventura+ (Apple Silicon; Intel best-effort). Separate-login spaces need macOS 14+ (D12) | WKWebView | High (no hands-on testing until the owner's MacBook arrives) |
 | Linux | Ubuntu 22.04 / 24.04 desktop, **Wayland and X11** | WebKitGTK (webkit2gtk-4.1), via wry's GTK path | Medium |
 
 The owner's Ubuntu machine is a server. Linux support targets *desktop* Linux. The server can host backend services later (update manifest, feedback intake, AI credit proxy).
@@ -54,7 +68,7 @@ The owner's Ubuntu machine is a server. Linux support targets *desktop* Linux. T
 
 > All targets are **provisional until Phase 0d** produces real baselines on the owner's machine. Then the orchestrator recalibrates them and records the result in `DECISIONS.md`.
 
-Measured with the benchmark in §9, same machine, fresh profiles.
+Measured with the benchmark in §9, same machine, fresh profiles. **The headline comparison is against Brave and Edge with their memory savers at their most aggressive setting** (Brave: Memory Saver Maximum; Edge: sleeping tabs at its most aggressive configuration, fixed in 0d), not their defaults (DEC-008).
 
 | Metric | Target |
 |---|---|
@@ -62,8 +76,10 @@ Measured with the benchmark in §9, same machine, fresh profiles.
 | Our shell process (Rust code incl. resident ad-block engine) | ≤ 60 MB |
 | Standard 20-tab set, hibernation **off**, **Windows** | ≤ 100% of Brave, ≤ 85% of Chrome |
 | Standard 20-tab set, hibernation **off**, **macOS** | ≤ 85% of Brave |
-| **Realistic mix** (§9: 20 tabs, 5 of which must stay alive), 30 min, default preset | ≤ 60% of Brave **with Memory Saver on**; ≤ 35% of Brave with it off |
-| Owner's real-world usage (Brave ~8.1 GB, Memory Saver off) | ≤ 2 GB |
+| **Realistic mix** (§9: 20 tabs, 5 of which must stay alive), 30 min, default preset — **headline** | ≤ 100% of Brave on **Maximum** and ≤ 100% of Edge at its **most aggressive** setting, **with all 5 must-stay-alive tabs alive** and the half-filled form's contents intact after a forced discard. Results report how many of the 5 tabs Brave and Edge kept alive |
+| Realistic mix, second line | ≤ 35% of Brave with Memory Saver off |
+| **Form restore** (§10 Phase 2a form-restore test suite) | **100%** of the supported fields come back after a forced discard |
+| Owner's real-world usage (Brave 8.1 GB with Memory Saver off, 2.6 GB on Maximum) | ≤ 2 GB |
 | Restoring a discarded tab (time to first paint, typical news site, cached) | ≤ 1.5 s |
 | Page-load time cost of our ad blocker (Windows, median over the standard set) | ≤ +5% vs blocker off |
 | Wrongly hibernated tabs (a tab hibernated while protected per §7.3 by a **trusted** signal) | **0**. Treat any occurrence as a bug |
@@ -86,10 +102,10 @@ Measured with the benchmark in §9, same machine, fresh profiles.
 ### 5.2 Revenue (owner's preference, in order)
 1. **Search partnerships.** A default-search royalty or affiliate deal. Needs real user numbers, so it comes after Phase 4. The user can always change the engine, and we never sell browsing data.
 2. **Donations and sponsorships.** GitHub Sponsors, Open Collective, Ko-fi links on the About page and the website from Phase 4.
-3. **AI credits** (Phase 6). Prepaid credits for the AI toolkit, served through our own proxy. "Bring your own API key" stays free.
+3. **AI credits** (Phase 6). Prepaid credits for the optional AI features, served through our own proxy, for users who move the AI slider above "No AI" (§8.8). "Bring your own API key" stays free; on-device OS models may also be free (D13). AI is never turned on to grow this revenue line: the default stays "No AI".
 4. Possibly later: a paid tier (sync, premium themes, priority support).
 
-Hard rules: no ads injected into pages, no selling user data, no telemetry without opt-in.
+Hard rules: no ads injected into pages, no selling user data, no telemetry without opt-in, **no update ever turns AI on** (§8.8). A public "How we're funded / what we collect" page states these (Phase 4b).
 
 ## 6. Architecture
 
@@ -167,10 +183,10 @@ Events flow out as an `EngineEvent` enum, including at least: `NavigationStartin
 
 Every backend-specific feature is reported through `EngineCaps`, and the policy layer degrades gracefully (no freeze on WebKit → go straight from Background to Discarded).
 
-`snapshot()` (tab thumbnails) and Chrome-extension capabilities are added when first needed (Phase 2 stretch / Phase 5), not before.
+`snapshot()` (an image of the visible page, for the restore screenshot in §7.5) is added in Phase 2a (WebView2 `CapturePreview`, WKWebView `takeSnapshot`, WebKitGTK `get_snapshot`, (verify) each). Per-space data stores (§8.10) and Chrome-extension capabilities are added when first needed (Phase 5a / 5b), not before.
 
 ### 6.4 Process model
-- **Windows:** create **exactly one `CoreWebView2Environment` per profile kind** (normal, private) and pass it to every view. Views share the browser process only if the user-data folder *and* environment options match exactly. One mismatched `AdditionalBrowserArguments` means a second browser process or a creation error. Renderers are per-site (Chromium site isolation). Experiment flag (bench-only, off by default): `--renderer-process-limit=N`.
+- **Windows:** create **exactly one `CoreWebView2Environment` per profile kind** (normal, private) and pass it to every view. Views share the browser process only if the user-data folder *and* environment options match exactly. One mismatched `AdditionalBrowserArguments` means a second browser process or a creation error. Renderers are per-site (Chromium site isolation). Experiment flag (bench-only, off by default): `--renderer-process-limit=N`. Separate-login spaces (Phase 5a) add **WebView2 profiles** (`ProfileName` in the controller options) inside the same environment, which share its browser process; measure each extra profile's memory cost then.
 - **macOS:** WebKit manages WebContent processes itself. We control only views and data stores.
 - **Linux:** WebKitGTK multi-process. Share one `WebKitWebContext` per profile; use `related-view` for popups that need an opener.
 
@@ -193,7 +209,7 @@ Every backend-specific feature is reported through `EngineCaps`, and the policy 
 - **Second layer:** every IPC message is checked against the sender's origin and frame (available on all three backends, **(verify)**). Messages from the wrong origin or from subframes are dropped and logged.
 
 **Injected scripts and page-reported signals:**
-- Features that need scripts in web pages (form/media detection fallbacks, scroll restore, volume boost, cosmetic filtering, forced dark mode) use a narrow **page channel**, separate from privileged IPC.
+- Features that need scripts in web pages (form/media detection fallbacks, form capture and restore (§7.5), scroll restore, volume boost, cosmetic filtering, forced dark mode) use a narrow **page channel**, separate from privileged IPC.
 - Scripts run in an **isolated world** where available (`WKContentWorld`, WebKitGTK script worlds). Some fallbacks need the **main world**, where the page can tamper with them: wrapping `getUserMedia`, observing `AudioContext`, detecting `beforeunload` handlers. On WebView2, isolated-world support for host scripts must be verified in Phase 0b. Assume any page script can call `chrome.webview.postMessage`.
 - Therefore **every page-channel message is untrusted and forgeable.** It is schema-validated, rate-limited, scoped to its own tab, and can only produce *page-reported* signals (§7.2), which have weaker protection power than trusted ones (§7.3).
 
@@ -215,12 +231,12 @@ Every user-visible action is a **named command** dispatched through one place in
 Why it's worth doing from Phase 1a:
 - **One path for every action**, so shortcuts, menus and the UI can't drift apart, and user-editable shortcuts are simply a keymap → command table.
 - **Testability:** command sequences can be replayed against `lwb-core` in unit tests, and the `bench` control channel (§9) is just a command transport instead of a separate API.
-- **Future surfaces at no extra cost:** a command palette (Phase 4a), and the AI toolkit (Phase 6) acting through the same commands, so everything an assistant does is visible, undoable where possible, and permission-checked.
+- **Future surfaces at no extra cost:** a command palette (Phase 4a), and AI features (Phase 6) that change *browser* state (e.g. applying a tab-tidy suggestion the user accepted) going through the same commands, so everything they do is visible, undoable where possible, and permission-checked. Acting *on pages* (clicking, typing, submitting, navigating on the user's behalf) is not a command any AI feature may issue (D9).
 
-Commands are a versioned, serde-serialisable enum with typed parameters. Each command declares which callers may invoke it: chrome view, internal page, keyboard, bench transport, or (later) external automation. **No external automation surface (CLI control, JSON over a socket, MCP) ships enabled.** Adding one is a separate decision (D9), because remote control of a logged-in browser is a serious security risk.
+Commands are a versioned, serde-serialisable enum with typed parameters. Each command declares which callers may invoke it: chrome view, internal page, keyboard, bench transport, or (later) external automation. **No external automation surface (CLI control, JSON over a socket, MCP) ships enabled, and no in-browser agent acts on pages.** Adding either is a separate decision (D9), because automating a logged-in browser is a serious security risk (prompt injection is unsolved; research report). The `bench`-feature control channel (§9) is a dev-only tool that release builds never contain, so it is outside D9.
 
 ### 6.8 Storage
-SQLite file in the per-OS app data dir (`directories` crate), WAL mode. Tables (v1): `sessions`, `tabs` (incl. per-tab back/forward stack, scroll position, last-navigation-was-POST flag), `history`, `bookmarks`, `site_settings` (zoom, dark mode, keep-awake, blocker exceptions, permissions), `settings`. Session state is **saved on every change (debounced ~1 s)**, not only on exit, so crashes lose nothing. Engine profile data (cookies, cache) stays in the engine's own data store, pointed at our app data dir. **Private windows** use an ephemeral engine data store, and none of their tabs or history is written to SQLite. Migrations are versioned (`PRAGMA user_version`).
+SQLite file in the per-OS app data dir (`directories` crate), WAL mode. Tables (v1): `sessions`, `tabs` (incl. per-tab back/forward stack, scroll position, last-navigation-was-POST flag, `archived` flag + time for auto-archive), `history`, `bookmarks`, `site_settings` (zoom, dark mode, keep-awake, blocker exceptions, permissions), `settings`. Session state is **saved on every change (debounced ~1 s)**, incrementally (only changed rows), not only on exit, so crashes lose nothing and a 500-tab session stays cheap to save and restore. **Captured form data (§7.5) is never written to SQLite** (in memory only; D10). Engine profile data (cookies, cache) stays in the engine's own data store, pointed at our app data dir. **Private windows** use an ephemeral engine data store, and none of their tabs or history is written to SQLite. Migrations are versioned (`PRAGMA user_version`).
 
 ## 7. Memory management (core feature)
 
@@ -258,6 +274,8 @@ Each signal is **trusted** (native engine API or our own UI) or **page-reported*
 | Last user interaction in tab | ✅ trusted: our focus/input tracking | ✅ | ✅ | — |
 
 ### 7.3 Protection rules
+**"Never loses your work" has two layers, in this order of importance (DEC-009):** (1) don't sleep tabs holding work: these protection rules, which are the primary guarantee and what the public claim rests on; (2) restore what we can when a tab is slept anyway (§7.5).
+
 A background tab is **protected** (never frozen or discarded) if any of these hold:
 
 **Trusted rules:**
@@ -290,8 +308,19 @@ Protection is re-evaluated on every signal change and at every policy wake-up.
 
 ### 7.5 Restore
 - **Frozen → Active:** resume, instant.
-- **Discarded → Active:** create a `Web` view, navigate to the saved URL, restore the scroll position via an injected script after load (best effort), and keep our stored per-tab history stack. Back/Forward on a restored tab navigates through our stack, since the engine's own history was lost.
+- **Discarded → Active:** create a `Web` view, navigate to the saved URL, restore captured page state (below), and keep our stored per-tab history stack. Back/Forward on a restored tab navigates through our stack, since the engine's own history was lost.
 - **Never auto-reload unsafe URLs:** if the tab's last navigation was a POST, or the site is marked "don't auto-reload" in `site_settings`, activating it shows a **"Click to reload"** placeholder instead.
+
+**Capturing page state (layer 2 of "never loses your work", DEC-009).** A tab can still be discarded: budget pressure (§7.4), the user's "Hibernate now", an expired page-reported protection, or the idle timer on an unprotected tab. So we capture what a reload would lose:
+- **When:** form state and scroll position are captured when a tab is frozen (the page can't change while frozen, and running a script would resume it), or just before discarding a tab that wasn't frozen. The screenshot is taken when the user switches away from the tab, since background views are hidden and may not render (2a verifies what each engine returns for a hidden view).
+- **What:** form field values, the focused field and the scroll position, gathered by the isolated-world page script (main world only where 0b/0c find no isolated world), plus a **screenshot** of the page as last shown (`snapshot()`, §6.3). Fields are recorded with stable selectors (id, name, label, form and field position). Covered: text-like inputs, `textarea`, `select`, checkboxes and radio buttons, `contenteditable`, in the top frame and same-origin frames.
+- **Never captured:** password fields; fields whose `autocomplete` is `cc-*`, `one-time-code` or `new-password`; hidden fields; file inputs; cross-origin frames (this also leaves out embedded payment forms). **Nothing at all in private windows** (no form data, no screenshot).
+- **Untrusted input:** captured data arrives over the page channel (§6.6), so it is schema-validated and size-capped per field and per tab (caps set in 2a), and is restored only into a page of the **same origin** it came from. `contenteditable` content is restored as plain text or sanitized HTML, never with scripts or event handlers.
+- **Storage:** form data stays **in memory only**, in the shell process, and is dropped when the tab closes. It does not survive a browser restart (whether it should, encrypted with DPAPI / Keychain / libsecret, is D10). **Screenshots are written to a cache folder on disk, not held in RAM**, deleted when the tab closes, and the folder is cleared at startup.
+
+**Restoring:** while the reloaded page loads, show the screenshot in place of the page (mechanism chosen in 2a, e.g. an `Internal` view or the chrome view drawn over the loading content view). After load, restore field values (best effort, matched by the stable selectors, firing `input`/`change` events so the page's own scripts notice), then the focused field and scroll position. Fields that can't be matched are skipped, never guessed.
+
+**Honest limits** (stated in the UI help and on the public "never lose your work" page): a reload can't bring back state that lived only in the page's memory, such as unsaved work held by a web app's own JavaScript, an in-progress upload, or a multi-step flow the server resets on reload. That is why layer 1 (§7.3) comes first. Sites that restore badly can be marked "don't auto-reload" or "Keep awake".
 
 ### 7.6 Measuring memory (`lwb-memprobe`)
 - **Metric per OS** (matches what users see in their task manager):
@@ -327,7 +356,9 @@ Protection is re-evaluated on every signal change and at every policy wake-up.
 ### 8.4 Daily-driver features
 **Phase 1 (needed to "browse normally for a day"):** address bar with search (configurable engine), back/forward/reload/stop, **keyboard shortcuts that work even when a page has focus** (native accelerator handling per backend: WebView2 `AcceleratorKeyPressed`, macOS menu key equivalents / `NSEvent` monitor, GTK key handlers). Shortcuts: Ctrl/Cmd + T, W, Shift+T, L, R, F, Tab/Shift+Tab, 1–9, +/−/0, Alt+←/→. Also: **our own page context menu** (incl. "Open link in new tab", Inspect when devtools are enabled), **permission prompts** with per-site storage, **element fullscreen** (chrome hides, view fills the window), **certificate error interstitial**, **HTTP auth dialog**, **JS dialogs** (alert/confirm/prompt, `beforeunload` on close), **HiDPI and moving between monitors** with different scale factors, **find in page**, **history recording** (data only; UI in Phase 4), per-site zoom, downloads list, crashed-tab page with Reload, DevTools (behind a setting).
 
-**Phase 4:** history UI, bookmarks (+ bar, import from Chrome/Brave/Edge `Bookmarks` JSON), address-bar autocomplete, **private windows**, **clear browsing data**, **multiple windows** + moving tabs between them, **print** and **PDF viewing** (built into WebView2/WKWebView; WebKitGTK (verify), else fall back to opening externally), **default-browser registration** (Windows: installer registers capabilities, then opens the Default Apps page, since apps can't set themselves as default), **many-tab usability** (tab search, overflow with 50+ tabs, close duplicates), **Global Privacy Control** header and an **HTTPS-upgrade mode**.
+**Phase 2b:** **tab search, including sleeping (discarded) tabs** (title and URL; archived tabs too once 4a adds them).
+
+**Phase 4:** history UI, bookmarks (+ bar), import via onboarding (§8.9), address-bar autocomplete, **private windows**, **clear browsing data**, **multiple windows** + moving tabs between them, **print** and **PDF viewing** (built into WebView2/WKWebView; WebKitGTK (verify), else fall back to opening externally), **default-browser registration** (Windows: installer registers capabilities, then opens the Default Apps page, since apps can't set themselves as default), **many-tab usability** (overflow with 50+ tabs, close duplicates), **optional auto-archive** of long-unused tabs (off by default; an archived tab leaves the tab strip, keeps its saved state, and stays findable via tab search and history), **Global Privacy Control** header and an **HTTPS-upgrade mode**.
 
 **Ongoing baseline from Phase 1:** keyboard focus moves predictably between the chrome and content; chrome HTML is screen-reader labelled; IME input works in the address bar.
 
@@ -337,23 +368,65 @@ Phase 4b: on startup (at most daily), check the GitHub Releases API and **notify
 ### 8.6 Crash diagnostics
 WebView2 writes Crashpad dumps for its own processes. For our shell: a panic hook writing a log, plus a "Copy diagnostics" button on `lwb://about`. No automatic upload.
 
-### 8.7 Extensions (Phase 5)
+### 8.7 Extensions (Phase 5b)
 1. Built-in features first (§8.1–8.3).
 2. **Our own lightweight extension format:** manifest + content scripts + CSS + a small, permissioned API (storage, tab info, messaging), mirroring a subset of WebExtensions so simple Chrome extensions port easily. Works on all three OSes.
 3. **Windows only, experimental:** load Chrome extensions via WebView2's browser-extension API. Compatibility is partial and password managers are the hard case. Mark it clearly as Windows-only.
 
-### 8.8 AI toolkit (Phase 6)
-Optional and **off by default**. When off, it loads nothing and costs zero memory (verified by benchmark). Initial features: summarize page, ask about the page, "tidy my tabs", explain a selection. Providers: bring-your-own key (free), or prepaid **credits** via our proxy on the owner's server. Page content is sent only on explicit user action and never stored server-side beyond the request. Specified in `docs/AI-SPEC.md` before Phase 6.
+### 8.8 AI: one slider, off by default (Phase 6; DEC-010)
+The onboarding page (§8.9) and Settings both show a **3-position slider: "No AI" / "On request" / "Full AI"**. **The default is No AI.** Moving it is always the user's voluntary choice.
+
+| Level | What it means |
+|---|---|
+| **No AI** (default) | No AI code loaded, no AI network requests, and **no AI interface anywhere**: no buttons, menu items, context-menu entries or "try AI" prompts. The only AI-related UI is the AI section in Settings (where the slider lives) and the onboarding slider. Costs zero memory (verified by benchmark) |
+| **On request** | AI runs only when the user explicitly invokes it (a click or shortcut). Nothing runs in the background, and no page content is sent without that action |
+| **Full AI** | Adds proactive features |
+
+- **Every AI feature has its own toggle in Settings.** The slider sets their defaults. If the user changes any toggle, the slider shows **"Custom"**.
+- **Our public promise: updates never turn AI on.** A new AI feature defaults to on only for users on Full AI, and is announced in the release notes. This promise goes on the "How we're funded / what we collect" page (Phase 4b).
+- **Agents that act on pages** (clicking, typing, submitting, navigating on the user's behalf) are excluded from every level until D9 decides otherwise. Features that only *read* a page on the user's request (summarize, ask about this page) are governed by this slider, not by D9.
+- **Core features never depend on AI:** hibernation, protection, blocking and restore work identically at every level.
+- Page content is sent only as the level allows, and is never stored server-side beyond the request.
+- **Providers:** bring-your-own key (free) or prepaid **credits** via our proxy on the owner's server. Free on-device OS models and the overall cost model are D13.
+- **Packaging (D11):** either bundle the AI module and load it only when the slider is above No AI, or download it on first use. Decide after measuring the size difference; the owner leans towards bundling if the difference is small, because a download on first use is a bad first experience. Either way, No AI costs zero RAM.
+
+**Draft feature list** (the final list is decided in `docs/AI-SPEC.md` before Phase 6):
+- *On request:* summarize page; ask about this page (side panel); explain/define a selection; translate a selection or page; rewrite/proofread text in a field; summarize a video from its transcript; plain-language search over tabs and history.
+- *Full AI adds:* tab-tidy suggestions (duplicates, stale tabs, grouping); automatic names for tab groups and spaces; a "where was I?" recap when reopening a space; an always-available page assistant; gentle hints (e.g. "long article, summarize it?").
+
+### 8.9 Onboarding (Phase 4a; DEC-011)
+- Shown **once**, on first launch. **Entirely optional:** a prominent **"Skip, just browse"** button, and every step has a sensible default, so the user can start browsing immediately after install.
+- Steps, each skippable and all changeable later in Settings:
+  1. **Import** from Chrome, Brave, Edge, Firefox or **Arc**: bookmarks, history, open tabs/sessions. For Arc, its local sidebar and spaces data (Arc stops working on 22 December 2026, so the importer reads Arc's local files and never needs Arc to run). Arc spaces are imported as **bookmark folders** (one per space) until spaces exist; Phase 5a offers to convert them into spaces. Passwords and cookies are never imported. Every importer is a parser of untrusted files and gets a fuzz target (§6.6).
+  2. **Theme** (light / dark / system).
+  3. **Hibernation preset** (Relaxed / Balanced / Aggressive; default per D6).
+  4. **Ad blocking** on/off (default on).
+  5. **Search engine:** a fair choice list. The default here is tied to search-partnership revenue (§5.2, D4).
+  6. **AI slider** (§8.8), starting at No AI.
+- Re-openable later from Settings.
+- **No account and no email required**, ever, to use the browser.
+
+### 8.10 Spaces (Phase 5a; DEC-012)
+- A **space** is a named set of tabs in a window that the user can switch between (e.g. "Work", "Personal"). Tabs in other spaces follow the normal lifecycle (§7.1) and are usually asleep.
+- Each space can optionally have **separate cookies and logins**:
+  - Windows: a WebView2 profile per space (`ProfileName`), sharing one environment and browser process (§6.4);
+  - macOS: `WKWebsiteDataStore` with an identifier, which needs **macOS 14+** while §3 says 13+ (D12);
+  - Linux: a separate WebKitGTK network session / web context per space (verify the API on webkit2gtk-4.1 vs WebKitGTK 6).
+- Measure the memory cost of each extra WebView2 profile when this is built, and report it on `lwb://memory`.
+- Offers to convert Arc spaces imported as bookmark folders (§8.9) into spaces.
 
 ## 9. Benchmark methodology (`tools/lwb-bench`)
 - Launches each browser with a **fresh profile** and a fixed URL list, waits for loads to settle, then samples memory (§7.6 metrics, whole process tree) every 5 s for 5 min. Reports median and p90. 3 runs per configuration; report the median of the medians. Also records page-load times (for the blocker-overhead target).
-- **Required browsers/configs:** ours (hibernation off; default preset), **Brave with Memory Saver Off, Moderate, Balanced (the default) and Maximum**, Chrome (same modes, if it still offers all of them), Edge (Windows). The bench sets the mode explicitly in each fresh profile, so the owner's personal browser settings don't affect results. Brave and Chrome also have an "Always keep these sites active" list; it stays empty in benchmark profiles, matching our empty-by-default user list except for the shipped defaults, which the results note. Headline comparisons use the default (Balanced); Maximum is always reported alongside, as the strongest competitor configuration. Optional extras: Firefox, Safari (macOS, manual). Fresh profiles, no extensions, default settings otherwise. Brave's built-in blocking stays on (noted in results).
+- **Required browsers/configs:** ours (hibernation off; default preset), **Brave with Memory Saver Off, Moderate, Balanced (the default) and Maximum**, Chrome (same modes, if it still offers all of them), **Edge (Windows) with sleeping tabs off, at its default, and at its most aggressive setting** (the exact settings, e.g. the shortest sleep timeout and any related efficiency option, are fixed in 0d and documented). The bench sets the mode explicitly in each fresh profile, so the owner's personal browser settings don't affect results. Brave, Chrome and Edge also have "always keep these sites active" lists; they stay empty in benchmark profiles, matching our empty-by-default user list except for the shipped defaults, which the results note. **Headline comparisons use Brave Maximum and Edge's most aggressive setting** (DEC-008); the defaults are always reported alongside. Optional extras: Firefox, Safari (macOS, manual). Fresh profiles, no extensions, default settings otherwise. Brave's built-in blocking stays on (noted in results).
 - **Autoplay:** fresh profiles block unmuted autoplay, so the YouTube tab is started the same way in every browser: a scripted click. If impossible, use `--autoplay-policy=no-user-gesture-required` for all Chromium-based browsers and document it.
 - **Tab sets** (`bench/tabs-standard.txt`, `bench/tabs-realistic.txt`, URLs fixed and versioned in Phase 0d):
   - *Standard (20, logged out):* YouTube video (playing), Wikipedia, two news sites, Reddit thread, GitHub repo, Stack Overflow, MDN, Google Maps, shopping product page, recipe site (ad-heavy), Twitch channel, a docs site, a blog, weather, sports, long-form article, image-heavy site, Excalidraw, a search results page.
-  - *Realistic mix (20):* the standard set, but 5 tabs must stay alive: audio playing, a `getUserMedia` test page (simulated call), a page with a half-filled form, a chat-style app (live connection), a site with notification permission granted. Measured at 30 min. This metric shows what we do better than Memory Saver: our browser should use less memory **and** keep all 5 alive, and we report whether Brave/Chrome kept them alive.
+  - *Realistic mix (20):* the standard set, but 5 tabs must stay alive: audio playing, a `getUserMedia` test page (simulated call), a page with a half-filled form, a chat-style app (live connection), a site with notification permission granted. Measured at 30 min. This metric shows what we do better than Memory Saver: our browser should use no more memory than Brave Maximum or Edge's most aggressive setting **and** keep all 5 alive, and **the results report how many of the 5 each competitor kept alive**.
+  - *Forced-discard form check* (part of the realistic mix, run in every browser): half-fill the form tab, force a discard (ours: the bench control channel's "hibernate now"; competitors: their own discard mechanism, e.g. `chrome://discards` where available, documented per browser), reactivate it, and check whether the field contents came back. Reported per browser.
 - **Driving our browser:** a `bench`-feature-only control channel (CLI flags + a local socket bound to 127.0.0.1 with a random token) to open tab sets, fast-forward the policy clock ("30-min idle simulation") and read state. Never in release builds (§6.6).
 - **Owner scenario:** a manual checklist reproducing the owner's usual logged-in Brave session, measured in both browsers.
+- **Machines:** the owner's main Windows machine, plus an **8 GB RAM Windows 10 machine** where one is available (the old/low-RAM audience, §1). Results name the machine.
+- **Energy (optional):** per-process energy over a run on Windows via `powercfg /srumutil`, summed over each browser's process tree. Supporting evidence for battery claims only (§1).
 - **Public claims** (from the Phase 2b write-up on): consider recording the tab set with a replay proxy (e.g. Web Page Replay) so runs months apart stay comparable.
 - Output: CSV + markdown summary in `bench/results/<date>-<os>-<machine>.md`. Methodology must be documented and reproducible, since these numbers become marketing claims.
 
@@ -385,14 +458,17 @@ In `spikes/engine-spike/` (throwaway quality is fine). One window: chrome view +
 - custom protocol: actual URL form (`lwb.localhost`?) and blocking it in web views;
 - **overlay test:** chrome view grown over the content area with a transparent background shows an autocomplete dropdown on top of a page, and shrinks back without flicker;
 - HiDPI: bounds correct at 100%/150% and when dragging between monitors;
-- memory: empty window total with and without the chrome view.
+- memory: empty window total with and without the chrome view;
+- **WebView2 telemetry:** what diagnostic/telemetry data the WebView2 runtime sends to Microsoft, and which settings, policies or environment options turn it off. This decides whether the "no telemetry by default" claim (§1) is true on Windows;
+- **DRM video:** whether Netflix, Disney+ and Spotify web play, and which DRM system is used;
+- **resource limiter groundwork:** whether WebView2's child processes can be placed in a Job Object (CPU rate caps) or given EcoQoS (`SetProcessInformation`), for a possible future limiter. No promise is made before this is known.
 - **Exit:** every ❌ gets a DECISIONS entry (workaround / direct bindings / scope change) and a go/no-go for Windows.
 
 **0c. macOS + Linux engine spike**
 The same spike app and checklist, adapted, in `docs/spikes/phase0c-macos.md` and `phase0c-linux.md`. Extras: Linux on **Wayland and X11** via the GTK path; WebKit content rule lists; macOS media/capture state APIs; macOS mute and process attribution (pick a method under D7); WebKitGTK permission requests, PDF, `is-capturing-*`. Run on GitHub's macOS runners (which have a GUI session) for the automatable checks. Hands-on macOS checks wait for the MacBook. Can run in parallel with 0d.
 
 **0d. Memory probe + benchmark v0 + baselines**
-`lwb-memprobe` (Windows implementation first; macOS/Linux stubs following §7.6) and `lwb-bench` v0 (launch other browsers with fresh profiles + tab set, sample, report). Fix the two tab-set files. Produce Windows baselines for Brave (Memory Saver off/on), Chrome (off/on) and Edge on the owner's machine. The orchestrator then recalibrates §4.
+`lwb-memprobe` (Windows implementation first; macOS/Linux stubs following §7.6) and `lwb-bench` v0 (launch other browsers with fresh profiles + tab set, sample, report). Fix the two tab-set files. Produce Windows baselines on the owner's machine (and an 8 GB Windows 10 machine if available) for Brave (Memory Saver off, Balanced, **Maximum**), Chrome (off/on) and Edge (sleeping tabs off, default, **most aggressive**), and fix the exact Edge settings used. The orchestrator then recalibrates §4.
 Also: `bench/README.md` (statistic + method per §4 target), and a CI job that reports installer-independent budgets measurable so far (shell binary size; cold start of the spike or app if available), failing on regression beyond the stated tolerance.
 - **Acceptance:** reproducible within ±10% across 3 runs; results committed in `bench/results/`.
 
@@ -400,15 +476,17 @@ Also: `bench/README.md` (statistic + method per §4 target), and a CI job that r
 **1a. Engine traits + Windows backend + browsing basics:** the `Engine`/`EngineView` traits (§6.3) and the Windows backend; the command layer (§6.7), with every 1a action going through it; view kinds and view swapping at the internal/web boundary (§6.6); window with chrome view (tab strip: new/close/switch/reorder/pinned; address bar: URL or search; back/forward/reload/stop; loading indicator; title + favicon); native accelerators; `lwb://newtab`, `lwb://about`; new-window requests → new tab (with opener popups); overlay mechanism (§6.5); HiDPI.
 
 **1b. Storage + essentials:** `lwb-storage`; fuzz targets for the IPC and page-channel message parsers; settings + `lwb://settings`; session save (debounced) + lazy restore (minimal Discarded state, §7.1); history recording; downloads; crashed-tab page; our page context menu; permission prompts + per-site storage; fullscreen; certificate interstitial; HTTP auth; JS dialogs; find in page; per-site zoom; DevTools setting.
-- **Acceptance (end of 1b):** the owner browses normally on Windows for a day (YouTube, Gmail, GitHub, a banking site, Google sign-in popup) with no blocking bugs. Empty-window memory recorded.
+- **Acceptance (end of 1b):** the owner browses normally on Windows for a day (YouTube, Gmail, GitHub, a banking site, Google sign-in popup) with no blocking bugs. Empty-window memory recorded. **500-tab session restore test** (a generated session of 500 tabs): the browser restores it without hanging (the UI stays responsive), the active tab loads first, and all 500 tabs are present afterwards.
 
 **1c. macOS + Linux backends** to feature parity with 1a/1b where `EngineCaps` allow. Acceptance: builds and launches in CI; manual smoke test on Linux (Wayland); macOS "CI-built, not run" until the MacBook arrives.
 
 ### Phase 2: Memory management
-**2a. Lifecycle, signals, protection:** full state machine with engine events (§7.1); trusted + page-reported signals (§7.2) per backend; all protection rules incl. expiry and the user-interaction requirement (§7.3); Keep-awake; Always-keep-awake list; restore with scroll/history and the POST "click to reload" rule (§7.5). `plan()` unit tests covering: idle timers, every protection rule, page-reported expiry, the podcast scenario, a forged "unsaved input" message without user interaction (must not protect), notification-site rule, previously-active grace, engine-initiated resume, freeze failure.
+**2a. Lifecycle, signals, protection:** full state machine with engine events (§7.1); trusted + page-reported signals (§7.2) per backend; all protection rules incl. expiry and the user-interaction requirement (§7.3); Keep-awake; Always-keep-awake list; restore with history and the POST "click to reload" rule; **page-state capture and restore** (form fields, focused field, scroll position, screenshot via `snapshot()`, with every exclusion and the in-memory-only rule; §7.5). `plan()` unit tests covering: idle timers, every protection rule, page-reported expiry, the podcast scenario, a forged "unsaved input" message without user interaction (must not protect), notification-site rule, previously-active grace, engine-initiated resume, freeze failure.
+- **Form-restore test suite** (local test pages served by the test harness): text fields, `textarea`, `select`, checkbox/radio, `contenteditable`, a multi-step form, and a long scrolled page. Each page is filled in, force-discarded, reactivated and checked: values, focused field and scroll position come back. Exclusion cases: password, `cc-*`, `one-time-code`, `new-password`, hidden and file fields are **not** captured; a cross-origin frame is not captured; a private window captures nothing; captured data is gone after the tab closes; an oversized or malformed capture message is rejected.
+- **Acceptance (end of 2a):** 100% of the supported fields in the suite come back (§4), and every exclusion case passes, on Windows; on macOS/Linux where `EngineCaps` allow.
 
-**2b. Budget + dashboard:** memory limit with presets, hysteresis, cooldown and OS pressure triggers (§7.4); event-driven scheduling; `lwb://memory` (total, per-process, per-tab where supported, states, protection reasons, "hibernate now"); tab-strip indicators; learning prompt. Tests: budget pressure discards (never freezes), the all-protected case, hysteresis, cooldown.
-- **Acceptance (end of 2b):** realistic-mix target in §4 met or the gap explained; zero wrongly hibernated tabs in the scripted 60-min Aggressive-preset test; first public benchmark write-up.
+**2b. Budget + dashboard:** memory limit with presets, hysteresis, cooldown and OS pressure triggers (§7.4); event-driven scheduling; `lwb://memory` (total, per-process, per-tab where supported, states, protection reasons, "hibernate now"); tab-strip indicators; learning prompt; **tab search including sleeping tabs** (§8.4). Tests: budget pressure discards (never freezes), the all-protected case, hysteresis, cooldown.
+- **Acceptance (end of 2b):** realistic-mix target in §4 met (including the forced-discard form check) or the gap explained; zero wrongly hibernated tabs in the scripted 60-min Aggressive-preset test; first public benchmark write-up.
 
 ### Phase 3: Built-in features
 **3a. Ad/tracker blocking** (§8.1) on all three backends, list updates, cosmetic filtering, per-site toggle, badge, plus the MV3-extension evaluation on Windows. Acceptance: known-ad test page blocked on all 3 OSes; blocker page-load target (§4) met on Windows; benchmark rerun.
@@ -416,15 +494,21 @@ Also: `bench/README.md` (statistic + method per §4 target), and a CI job that r
 **3b. Dark mode + audio** (§8.2, §8.3). Acceptance: forced dark is usable on 10 sample sites; volume boost works on YouTube; mute works on all 3 OSes (macOS via D7 decision).
 
 ### Phase 4: Daily-driver polish and tester release
-**4a. Features:** everything in the §8.4 Phase 4 list, a command palette listing every command (§6.7), user-editable keyboard shortcuts, final name/icon if decided (D2), About page with donation/sponsor links.
+**4a. Features:** everything in the §8.4 Phase 4 list (incl. optional auto-archive), the **onboarding page** (§8.9) with its importers (Chrome, Brave, Edge, Firefox, Arc) and their fuzz targets, a command palette listing every command (§6.7), user-editable keyboard shortcuts, final name/icon if decided (D2), About page with donation/sponsor links. Acceptance includes: "Skip, just browse" reaches a usable window in one click; every onboarding step can be skipped and changed later in Settings; the AI slider step starts at No AI.
 
-**4b. Release engineering:** CI check of the installer-size budget (§4); packaging with `cargo-packager` (Windows NSIS/MSI unsigned; macOS `.dmg` with an ad-hoc signed `.app`; Linux `.deb` + AppImage); checksums + minisign signatures; update notifier (§8.5); crash diagnostics (§8.6); `docs/TESTERS.md` (§11); in-app "Send feedback" link.
+**4b. Release engineering:** CI check of the installer-size budget (§4); packaging with `cargo-packager` (Windows NSIS/MSI unsigned; macOS `.dmg` with an ad-hoc signed `.app`; Linux `.deb` + AppImage); checksums + minisign signatures; update notifier (§8.5); crash diagnostics (§8.6); `docs/TESTERS.md` (§11); in-app "Send feedback" link; a public **"How we're funded / what we collect"** page (revenue sources §5.2, what data we and the engine send per the 0b telemetry finding, the "updates never turn AI on" promise, how to export your data), linked from `lwb://about` and `TESTERS.md`.
 - **Acceptance:** builds install on a clean Windows 11 machine (incl. the Smart App Control note) and on macOS by following `TESTERS.md`; first 5–10 external testers onboarded.
 
-### Phase 5: Extensions (§8.7)
-### Phase 6: AI toolkit and credits (§8.8, after `docs/AI-SPEC.md`)
+### Phase 5: Spaces and extensions
+**5a. Spaces** (§8.10): spaces, optional separate logins per space, conversion of imported Arc folders, per-profile memory measured. Depends on D12 for macOS.
+
+**5b. Extensions** (§8.7).
+
+### Phase 6: AI and credits (§8.8, after `docs/AI-SPEC.md`, which settles the final feature list, D11 and D13)
+Acceptance includes: at No AI, no AI code is loaded, no AI network request is made and no AI UI appears outside Settings (verified by benchmark and a UI check); a fresh install and an upgrade both land on No AI.
+
 ### Phase 7: Growth and revenue
-Website, `docs/MARKET.md` (sourced user complaints about browser memory use and about Memory Saver unloading tabs people needed, mapped to our features; also where to find first users, e.g. r/browsers, r/pcmasterrace, Show HN, after checking each community's self-promotion rules), search-partnership outreach, sponsorships, code signing + notarization once tester feedback is positive, auto-update, optional sync.
+Website, `docs/MARKET.md` (starting from the research report `docs/research/2026-11-browser-positioning.md`, spot-checking its quotes on the source pages first; sourced user complaints about browser memory use and about Memory Saver unloading tabs people needed, mapped to our features; also where to find first users, e.g. r/browsers, r/pcmasterrace, Show HN, after checking each community's self-promotion rules), search-partnership outreach, sponsorships, code signing + notarization once tester feedback is positive, auto-update, optional sync.
 ### Phase 8: Engine research (decision gate)
 Evaluate Servo as an alternative backend behind the `Engine` trait, and decide whether owning an engine is worth it. Output: a report and recommendation, not a commitment.
 
@@ -442,7 +526,7 @@ Evaluate Servo as an alternative backend behind the `Engine` trait, and decide w
 | OAuth popups break (no `window.opener`) | High (logins fail) | Explicit spike test with a real Google sign-in |
 | Overlays (dropdowns) can't draw over content | High (UX) | Chrome-view growth tested in 0b; overlay-view fallback |
 | On Windows we run the same Chromium as Brave/Chrome | Medium | Honest targets (§4); win on lazy restore, smart protection, transparency; bigger wins on macOS |
-| Brave/Chrome already have Memory Saver | Medium | Benchmark against it; compete on *not* breaking in-use tabs (realistic-mix metric) + transparency |
+| Brave/Chrome/Edge already have memory savers (Brave Maximum took the owner from 8.1 to 2.6 GB) | Medium | Benchmark against them at their most aggressive setting; compete on *not* breaking in-use tabs and on restoring form state (realistic-mix metric, form-restore suite) + transparency |
 | Pages forge "protected" signals | Medium | Trusted vs page-reported split; interaction requirement; expiry (§7.3) |
 | macOS process attribution needs private API | Medium | D7 policy; totals-only fallback |
 | Linux Wayland child views | Medium | GTK path; tested in 0c |
@@ -452,6 +536,10 @@ Evaluate Servo as an alternative backend behind the `Engine` trait, and decide w
 | Unsigned builds / Smart App Control block testers | Medium | `TESTERS.md`, signatures; D8 trigger for cheap signing |
 | Ad-blocking arms race (YouTube) | Low/Medium | Best effort, no promises |
 | License misunderstanding | Medium | FSL + CLA, lawyer review before commercialisation |
+| "Never loses your work" is tested publicly, and one lost form undoes it | High (trust) | Claim rests on the §7.3 protection rules first; the form-restore test suite (2a) and the realistic-mix forced-discard check back it; the honest limits (§7.5) are published with the claim |
+| WebKitGTK performs poorly on weak Linux hardware | Medium | Measure on modest hardware in 1c; don't market Linux as "revive an old laptop" |
+| WebView2 support on Windows 10 ends (at least Oct 2028) | Medium | Windows 10 is an audience, not a dependency; track Microsoft's dates; plan the messaging before the end date |
+| Maintaining WebKit off Apple platforms is costly (Kagi stopped Orion for Windows/Linux, citing it) | Medium | We use the OS's own engine and never port WebKit ourselves; Linux stays on the distro's WebKitGTK |
 
 ## 13. Open decisions and questions (owner)
 | # | Decision | Recommendation | Status |
@@ -464,8 +552,14 @@ Evaluate Servo as an alternative backend behind the `Engine` trait, and decide w
 | D6 | Default hibernation preset | Balanced (5 min freeze / 30 min discard) | Open |
 | D7 | Private Apple APIs (mute, process attribution) | Allowed behind the `macos-spi` feature + runtime check + public fallback | **Decided** (DEC-004) |
 | D8 | Earlier cheap Windows signing | Only if Smart App Control blocks testers (§11) | Open (Phase 4b) |
-| D9 | External automation surface (CLI control, socket API, MCP) | Not before Phase 6; opt-in only, local-only, per-session approval | Open |
-| Q1 | Was Brave's Memory Saver on in the owner's baseline? | — | **Answered:** off; 8.1 GB / 64 processes |
+| D9 | Automation of the browser or pages: outside surfaces (CLI control, socket API, MCP) **and in-browser agents that act (click, type, submit, navigate) on the user's behalf**. AI features that only read a page on request are governed by the AI slider (§8.8), not D9. The `bench`-feature control channel is a dev-only tool outside D9 | Not before Phase 6; opt-in only, local-only, per-session approval | Open (scope widened in DEC-010) |
+| D10 | Should captured form data (§7.5) survive a browser restart? | Not by default. If yes, encrypt with DPAPI (Windows) / Keychain (macOS) / libsecret (Linux), never in private windows | Open (Phase 2a) |
+| D11 | AI module packaging: bundled and loaded only above No AI, or downloaded on first use | Bundle if the size difference is small (a download on first use is a bad first experience); measure first. No AI costs zero RAM either way | Open (decided in `docs/AI-SPEC.md`) |
+| D12 | Separate-login spaces need macOS 14+ (`WKWebsiteDataStore` identifiers); §3 says macOS 13+ | Raise the macOS minimum to 14, or make separate-login spaces macOS-14-only | Open (before Phase 5a) |
+| D13 | AI cost model | Free AI via on-device OS models (Apple Foundation Models on macOS; Windows on-device APIs on supported PCs) and bring-your-own-key; prepaid credits via our proxy for everything else and for heavy features; no bundled local model by default (memory headline); a free cloud allowance only once there's revenue to fund it | Open (decided in `docs/AI-SPEC.md` before Phase 6) |
+| D14 | AI levels: one 3-position slider, default No AI, per-feature toggles, updates never turn AI on (§8.8) | — | **Decided** (DEC-010) |
+| D15 | Onboarding: optional first-launch page, "Skip, just browse", no account (§8.9) | — | **Decided** (DEC-011) |
+| Q1 | Was Brave's Memory Saver on in the owner's baseline? | — | **Answered:** off; 8.1 GB / 64 processes (2.6 GB on Maximum) |
 
 ## 14. Workflow (orchestration)
 1. **Spec review:** fresh session(s) review this spec; findings go in `docs/reviews/`. The orchestrator folds them in, and the owner approves → status `APPROVED v1.0`.

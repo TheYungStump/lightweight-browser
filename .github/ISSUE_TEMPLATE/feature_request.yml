@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest an idea or improvement.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation and what's frustrating about it today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+      description: Other browsers, extensions or workarounds.
+  - type: dropdown
+    id: memory
+    attributes:
+      label: Would this change memory use?
+      description: Memory is the product. Features that cost RAM when unused are a hard sell.
+      options:
+        - No, or I don't know
+        - It would reduce memory use
+        - It would cost memory only while in use
+        - It would cost memory all the time

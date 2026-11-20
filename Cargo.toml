@@ -1,0 +1,36 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/lwb-app",
+    "crates/lwb-core",
+    "crates/lwb-engine",
+    "crates/lwb-memprobe",
+    "crates/lwb-blocker",
+    "crates/lwb-storage",
+    "tools/lwb-bench",
+]
+# Spikes are standalone throwaway projects with their own Cargo.toml (SPEC §6.2).
+exclude = ["spikes/*"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.100.0"
+license = "FSL-1.1-ALv2"
+repository = "https://github.com/TheYungStump/lightweight-browser"
+publish = false
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+# Size- and memory-oriented release build. Rationale for each setting is in the
+# Phase 0a PR description and CONTRIBUTING.md.
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = true

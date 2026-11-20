@@ -1,0 +1,12 @@
+[package]
+name = "lwb-storage"
+description = "SQLite storage for sessions, history, bookmarks, site settings and settings."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

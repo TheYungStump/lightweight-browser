@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to the same PR cancels the run it supersedes. Runs on `main` are
+# never cancelled, so every merged commit gets a complete result.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  # Incremental builds don't help a fresh CI checkout and bloat the cache.
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  check:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      # The runners ship rustup. This installs the exact toolchain and
+      # components pinned in rust-toolchain.toml, so no third-party action is needed.
+      - name: Install Rust toolchain
+        run: |
+          rustup toolchain install
+          rustc --version
+          cargo --version
+
+      - name: Install Linux system libraries (WebKitGTK, GTK)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Build
+        run: cargo build --workspace
+
+      - name: Test
+        run: cargo test --workspace
+
+  deny:
+    name: cargo-deny
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      # Pinned to the commit of v2.1.2 (bundles cargo-deny 0.21.0): a new
+      # cargo-deny release can break deny.toml. Bump deliberately (DEC-006).
+      - uses: EmbarkStudios/cargo-deny-action@70f81531115945ba6eb6b941ec9d39d063438eb9 # v2.1.2
+        with:
+          command: check

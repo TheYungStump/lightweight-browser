@@ -25,4 +25,4 @@ Tip for the owner: starting the session in Claude Code's **plan mode** (Shift+Ta
 Follow the plan. If you hit a new ambiguity mid-phase that would change the outcome, stop and ask rather than guess.
 
 ## Step 4: Before opening the PR
-Run fmt/clippy/tests, update `docs/STATUS.md` and `docs/DECISIONS.md`, write the manual test checklist `docs/testing/phase-<id>.md`, and open the PR. A separate review session with clean context reviews it afterwards (`docs/prompts/review-pr.md`). Don't review your own PR as a substitute.
+Run fmt/clippy/tests, update `docs/STATUS.md` and `docs/DECISIONS.md`, write the manual test checklist `docs/testing/phase-<id>.md`, and open the PR. A separate review session with clean context reviews it afterwards (`docs/prompts/review-pr.md`). Don't review your own PR as a substitute. If the owner asks, you may launch that review as a new Claude Code session yourself, with fresh context and its own worktree (SPEC §14 step 3). Give it only the `review-pr.md` prompt filled in, not your own findings.

@@ -1,0 +1,3 @@
+nav @/pages/hdcp.html
+wait 6000
+quit

@@ -1,0 +1,11 @@
+wait 2500
+navv 0 @/pages/popup.html
+wait 1500
+click 0 #open
+wait 2500
+exec 2 window.close()
+wait 1500
+state
+navv 0 @/pages/drm.html
+wait 3000
+quit

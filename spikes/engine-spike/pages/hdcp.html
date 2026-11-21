@@ -1,0 +1,30 @@
+<!doctype html><meta charset="utf-8"><title>hdcp</title>
+<h1>HDCP policy status per key system</h1><pre id="o"></pre>
+<script>
+// Streaming sites ask MediaKeys.getStatusForPolicy({minHdcpVersion}) before
+// they serve HD. If the answer isn't "usable" (or the call throws) they tend
+// to cap the resolution, often at 480p.
+const systems = [['com.widevine.alpha', ['SW_SECURE_DECODE', 'HW_SECURE_ALL']],
+  ['com.microsoft.playready.recommendation', ['2000', '3000']]];
+const versions = ['1.0', '1.4', '2.2'];
+const out = {};
+async function probe(ks, robustness) {
+  const cfg = [{ initDataTypes: ['cenc'],
+    videoCapabilities: [{ contentType: 'video/mp4; codecs="avc1.640028"', robustness }],
+    audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"' }] }];
+  const key = ks + ' ' + (robustness || '-');
+  try {
+    const mk = await (await navigator.requestMediaKeySystemAccess(ks, cfg)).createMediaKeys();
+    const r = {};
+    for (const v of versions) {
+      try { r[v] = await mk.getStatusForPolicy({ minHdcpVersion: v }); } catch (e) { r[v] = 'throws ' + e.name; }
+    }
+    out[key] = r;
+  } catch (e) { out[key] = 'no access: ' + e.name; }
+}
+(async () => {
+  for (const [ks, rs] of systems) for (const r of rs) await probe(ks, r);
+  document.getElementById('o').textContent = JSON.stringify(out, null, 1);
+  document.title = 'hdcp ' + JSON.stringify(out);
+})();
+</script>

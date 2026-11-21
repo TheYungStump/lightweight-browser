@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><title>audio</title>
+<h1>Audio</h1>
+<button id="osc" onclick="startOsc()">Start oscillator</button>
+<button id="stop" onclick="stopOsc()">Stop oscillator</button>
+<button id="silent" onclick="startOsc(0)">Start silent (gain 0) oscillator</button>
+<p id="s"></p>
+<script>
+let ctx, osc, gain;
+function startOsc(level = 0.05) {
+  ctx = ctx || new AudioContext();
+  osc = ctx.createOscillator(); gain = ctx.createGain(); gain.gain.value = level;
+  osc.frequency.value = 440; osc.connect(gain).connect(ctx.destination); osc.start();
+  ctx.resume(); document.getElementById('s').textContent = 'playing level ' + level + ' (ctx ' + ctx.state + ')';
+}
+function stopOsc() { if (osc) osc.stop(); document.getElementById('s').textContent = 'stopped'; }
+if (location.hash === '#auto') startOsc();
+if (location.hash === '#silent') startOsc(0);
+</script>

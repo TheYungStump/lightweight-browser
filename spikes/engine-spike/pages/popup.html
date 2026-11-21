@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><title>popup opener</title>
+<h1>Popup opener</h1>
+<button id="open" style="font-size:20px" onclick="w = window.open('popup-child.html', 'child', 'width=500,height=400')">Open popup</button>
+<pre id="o"></pre>
+<script>
+let w;
+window.addEventListener('message', (e) => { document.getElementById('o').textContent += 'from popup: ' + e.data + '\n'; document.title = 'opener got: ' + e.data; });
+</script>

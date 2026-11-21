@@ -1,0 +1,13 @@
+wait 4000
+state
+procs startup
+procx
+bounds
+tab 1
+wait 1500
+state
+tab 0
+wait 500
+crashinfo
+wait 1500
+quit

@@ -1,0 +1,18 @@
+wait 2500
+new private @/pages/index.html
+wait 1500
+ext
+wait 3000
+log --- extension, normal profile
+navv 1 @/pages/isolated.html?ext
+wait 4000
+log --- extension, private profile
+navv 2 @/pages/isolated.html?private
+wait 4000
+log --- page forging a channel message without the token
+exec 1 fetch('https://lwb-channel.invalid/msg',{method:'POST',mode:'no-cors',body:'{"token":"guess"}'}).then(()=>1)
+wait 1000
+log --- extension on a real site
+navv 1 https://example.com/
+wait 4000
+quit

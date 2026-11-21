@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>media</title>
+<h1>Permissions and capture</h1>
+<button id="gum" onclick="gum()">getUserMedia (mic)</button>
+<button id="gdm" onclick="gdm()">getDisplayMedia</button>
+<button id="geo" onclick="navigator.geolocation.getCurrentPosition(p => out('geo ok'), e => out('geo err ' + e.message))">geolocation</button>
+<button id="notif" onclick="Notification.requestPermission().then(r => out('notif ' + r))">notifications</button>
+<button id="clip" onclick="navigator.clipboard.readText().then(t => out('clip ok'), e => out('clip err ' + e))">clipboard read</button>
+<pre id="o"></pre>
+<script>
+const out = (m) => { document.getElementById('o').textContent += m + '\n'; document.title = 'media: ' + m; };
+function gum() { navigator.mediaDevices.getUserMedia({ audio: true }).then(s => out('gum ok tracks=' + s.getTracks().length), e => out('gum err ' + e.name)); }
+function gdm() { navigator.mediaDevices.getDisplayMedia({ video: true }).then(s => out('gdm ok'), e => out('gdm err ' + e.name)); }
+</script>

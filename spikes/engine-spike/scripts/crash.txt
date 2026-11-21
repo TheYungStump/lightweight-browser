@@ -1,0 +1,12 @@
+wait 3000
+crashinfo
+log --- renderer crash
+navv 0 edge://crash
+wait 4000
+log --- renderer crash via CDP
+navv 0 https://example.com/
+wait 2500
+log --- browser process crash
+navv 0 edge://inducebrowsercrashforrealz
+wait 6000
+quit

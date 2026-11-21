@@ -1,0 +1,27 @@
+wait 2500
+navv 0 @/pages/fullscreen.html
+wait 1500
+log --- fullscreen with a real OS click
+osclick 0 #fs
+wait 2000
+bounds
+exec 0 JSON.stringify({fe:!!document.fullscreenElement, w:innerWidth, h:innerHeight})
+wait 500
+osclick 0 #exit
+wait 2000
+bounds
+log --- accelerators while the PAGE has focus
+navv 0 @/pages/form.html
+wait 1500
+osclick 0 input
+wait 500
+exec 0 document.activeElement.tagName
+oskey t
+wait 400
+oskey l
+wait 400
+oskey w
+wait 400
+oskey a
+wait 400
+quit

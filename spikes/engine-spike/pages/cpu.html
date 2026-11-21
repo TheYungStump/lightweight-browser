@@ -1,0 +1,7 @@
+<!doctype html><meta charset="utf-8"><title>cpu</title>
+<h1>CPU burner</h1><p>Busy-loops on the main thread in 100 ms slices (when the URL ends in #go).</p><p id="n"></p>
+<script>
+let n = 0;
+function burn() { const end = performance.now() + 100; while (performance.now() < end) { n++; } document.getElementById('n').textContent = n; setTimeout(burn, 0); }
+if (location.hash === '#go') burn();
+</script>

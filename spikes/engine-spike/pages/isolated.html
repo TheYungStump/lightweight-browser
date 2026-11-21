@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8"><title>isolated</title>
+<h1>Isolated world test</h1>
+<p>The page sets <code>window.__pageMarker</code> and reports what it can see of host/extension globals.</p>
+<pre id="out"></pre>
+<script>
+window.__pageMarker = 'page';
+function report() {
+  const r = {
+    page_sees_hostMarker: typeof window.__hostMarker,
+    page_sees_extMarker: typeof window.__extMarker,
+    ext_dom_attr: document.documentElement.getAttribute('data-ext'),
+    page_has_chrome_webview: typeof (window.chrome && window.chrome.webview),
+    postMessage_wraps: window.__intercepted || 0,
+  };
+  document.getElementById('out').textContent = JSON.stringify(r, null, 1);
+  document.title = 'isolated ' + JSON.stringify(r);
+}
+setTimeout(report, 2000);
+// Tamper test: wrap postMessage to see whether host/extension messages pass through the page's wrapper.
+if (window.chrome && chrome.webview) {
+  const orig = chrome.webview.postMessage.bind(chrome.webview);
+  chrome.webview.postMessage = (m) => { window.__intercepted = (window.__intercepted || 0) + 1; orig({ forgedBy: 'page', original: m }); };
+}
+</script>

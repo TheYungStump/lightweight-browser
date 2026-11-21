@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  /* The page background is transparent so that, when the chrome view grows
+     over the content area (overlay test), only the strip and the dropdown
+     paint. */
+  html, body { margin: 0; background: transparent; font: 13px system-ui, sans-serif; height: 100%; overflow: hidden; }
+  #strip { height: 84px; box-sizing: border-box; background: #e8eaed; border-bottom: 1px solid #bbb; padding: 6px 8px; }
+  .row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+  button { font: inherit; padding: 2px 8px; }
+  #addr { flex: 1; font: inherit; padding: 4px 8px; }
+  /* Starts below the strip so it lies over the page and never covers the
+     "Overlay test" button (clicking that button a second time used to land on
+     the first suggestion and navigate to example.com). */
+  #dropdown { display: none; position: absolute; left: 120px; top: 86px; width: 600px; background: white; border: 1px solid #999;
+              box-shadow: 0 6px 16px rgba(0,0,0,.3); border-radius: 6px; overflow: hidden; }
+  #dropdown div { padding: 8px 12px; border-bottom: 1px solid #eee; }
+  #dropdown div:hover { background: #dbe8ff; }
+  #veil { display: none; position: absolute; left: 0; right: 0; top: 84px; bottom: 0; }
+  #flash { color: #a00; margin-left: 8px; }
+</style>
+</head>
+<body>
+<div id="strip">
+  <div class="row">
+    <button onclick="send('tab 0')">Tab 0</button>
+    <button onclick="send('tab 1')">Tab 1</button>
+    <button onclick="send('tab 2')">Tab 2</button>
+    <button onclick="send('tab 3')">Tab 3</button>
+    <button onclick="send('tab 4')">Tab 4</button>
+    <input id="addr" placeholder="Type to test the autocomplete overlay; Enter navigates" autocomplete="off">
+  </div>
+  <div class="row">
+    <button onclick="send('state')">State</button>
+    <button onclick="send('procs')">Memory</button>
+    <button onclick="send('procx')">Proc→frames</button>
+    <button onclick="toggleOverlay()">Overlay test</button>
+    <button onclick="send('blocker load')">Load blocker</button>
+    <button onclick="send('blocker')">Blocker stats</button>
+    <button onclick="send('new private https://example.org/')">New private tab</button>
+    <button onclick="send('bounds')">Bounds</button>
+    <button onclick="send('video')">Video info</button>
+    <span id="flash"></span>
+  </div>
+</div>
+<div id="dropdown">
+  <div>example.com — Example Domain</div>
+  <div>en.wikipedia.org — Wikipedia</div>
+  <div>github.com — GitHub</div>
+  <div>news.ycombinator.com — Hacker News</div>
+  <div>developer.mozilla.org — MDN</div>
+  <div>Search the web for “…”</div>
+</div>
+<!-- Transparent click catcher over the content area while the overlay is open. -->
+<div id="veil"></div>
+<script>
+  const send = (c) => window.ipc.postMessage(c);
+  let overlay = false;
+  window.setOverlay = (on, veil = true) => {
+    overlay = on;
+    document.getElementById('dropdown').style.display = on ? 'block' : 'none';
+    document.getElementById('veil').style.display = on && veil ? 'block' : 'none';
+  };
+  window.flash = (t) => { document.getElementById('flash').textContent = t; setTimeout(() => flash(''), 2000); };
+  function toggleOverlay() { send(overlay ? 'overlay off' : 'overlay on'); }
+  const addr = document.getElementById('addr');
+  addr.addEventListener('input', () => { if (!overlay && addr.value) send('overlay on'); if (overlay && !addr.value) send('overlay off'); });
+  addr.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { send('overlay off'); }
+    if (e.key === 'Enter') { send('overlay off'); let u = addr.value.trim(); if (!/^\w+:/.test(u)) u = 'https://' + u; send('nav ' + u); }
+  });
+  document.getElementById('veil').addEventListener('mousedown', () => { flash('click landed on transparent chrome area'); send('log overlay: click on transparent area hit the chrome view'); send('overlay off'); });
+  document.querySelectorAll('#dropdown div').forEach(d => d.addEventListener('mousedown', (e) => {
+    e.preventDefault(); send('overlay off'); send('nav https://' + d.textContent.split(' ')[0]);
+  }));
+</script>
+</body>
+</html>

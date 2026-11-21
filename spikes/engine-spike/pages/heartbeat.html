@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><title>heartbeat 0</title>
+<h1>Heartbeat</h1><p>Pings /ping/hb every second (shows in the log) and counts in the title.</p>
+<script>
+let n = 0;
+setInterval(() => { n++; document.title = 'heartbeat ' + n; fetch('/ping/hb?n=' + n + '&t=' + Date.now()).catch(() => {}); }, 1000);
+</script>

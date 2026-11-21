@@ -6,8 +6,10 @@ Run on Windows, on the `phase-0b-windows-spike` branch. Section A is the hands-o
 
 ```powershell
 cd spikes\engine-spike
-cargo run --release
+cargo run
 ```
+
+(A debug build is fine for these checks: the web engine is the installed WebView2 runtime, not our code.)
 
 A window opens with a grey strip at the top (the "chrome view") and a page below it. Buttons in the strip: **Tab 0 … Tab 4** switch tabs, the address bar navigates (type a URL, press Enter), **State / Memory / Bounds / Video info** write results to the console window and to `%LOCALAPPDATA%\lwb-spike\logs\spike-main.log`. Popups open as new tabs.
 

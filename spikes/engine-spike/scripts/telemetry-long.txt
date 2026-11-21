@@ -1,0 +1,5 @@
+wait 1200000
+log --- navigate to example.com
+navv 0 https://example.com/
+wait 30000
+quit

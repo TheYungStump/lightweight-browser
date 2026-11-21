@@ -1,0 +1,18 @@
+wait 2500
+log --- host script (AddScriptToExecuteOnDocumentCreated) world test
+docscript 0 window.__hostMarker='host'; document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>chrome.webview.postMessage('host-docscript: sees pageMarker='+typeof window.__pageMarker+', page wrapped postMessage='+(chrome.webview.postMessage.toString().indexOf('native code')<0)),500));
+navv 0 @/pages/isolated.html
+wait 3500
+exec 0 'ExecuteScript sees pageMarker='+typeof window.__pageMarker
+log --- extension content script world test
+ext
+wait 3000
+navv 1 @/pages/isolated.html?ext
+wait 4000
+exec 1 document.title
+log --- extension in a PRIVATE view
+new private @/pages/isolated.html?private
+wait 4000
+exec 2 document.title
+wait 500
+quit

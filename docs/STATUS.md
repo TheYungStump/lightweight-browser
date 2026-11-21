@@ -2,9 +2,9 @@
 
 | Phase | Status | Branch / PR | Notes |
 |---|---|---|---|
-| Spec | **v0.3 in review** (2026-11-20): positioning, never-lose-work, AI slider, onboarding, spaces; spec review 2 folded in | `spec-v0.3`, PR #5 | DEC-008 to DEC-014, from `docs/research/2026-11-browser-positioning.md` and `docs/reviews/spec-review-2.md`. v0.2 had the owner's go-ahead to implement (2026-11-18). 0b should start after this merges: it adds 0b checklist items |
-| 0a: Repo foundation | **Done**, ready to merge (CI green; review: approve with changes, fixed; owner checklist run) | `phase-0a-foundation`, PR #4 | Workspace (7 stub crates), tooling, cargo-deny, LICENSE (FSL-1.1-ALv2), CLA (approved), CONTRIBUTING, issue templates, 3-OS CI. See DEC-006 |
-| 0b: Windows engine spike | Ready to start after approval | `phase-0b-windows-spike` | Prompt: `docs/prompts/phase-0b.md`. Can run in parallel with 0a |
+| Spec | **v0.3 merged** (2026-11-20): positioning, never-lose-work, AI slider, onboarding, spaces; spec review 2 folded in | `spec-v0.3`, PR #5 (merged) | DEC-008 to DEC-014, from `docs/research/2026-11-browser-positioning.md` and `docs/reviews/spec-review-2.md`. v0.2 had the owner's go-ahead to implement (2026-11-18) |
+| 0a: Repo foundation | **Done** (merged) | `phase-0a-foundation`, PR #4 (merged) | Workspace (7 stub crates), tooling, cargo-deny, LICENSE (FSL-1.1-ALv2), CLA (approved), CONTRIBUTING, issue templates, 3-OS CI. See DEC-006 |
+| 0b: Windows engine spike | **In progress**: automated checklist items done; owner hands-on items pending (Google sign-in, DRM services, 150% HiDPI, overlay flicker, optional elevated network capture) | `phase-0b-windows-spike` | Report: `docs/spikes/phase0b-windows.md` (provisional **GO**). DEC-015 to DEC-019. Checklist: `docs/testing/phase-0b.md` |
 | 0c: macOS + Linux spike | Not started | — | Hands-on macOS checks wait for the MacBook |
 | 0d: Memory probe + bench v0 + baselines | Not started | — | |
 | 1a / 1b / 1c / 1d: Core browser | Not started | — | Split in DEC-014 (1c = engine-event UIs, 1d = macOS + Linux) |
@@ -15,6 +15,12 @@
 
 ## Current handoff notes
 _Implementation sessions: write what you finished, what's half-done, and what the next session should do first._
+
+**Phase 0b (2026-11-21):** spike in `spikes/engine-spike/` (standalone; `cargo run --release` from that folder). Every SPEC §10 0b checklist item was tested except the ones that need the owner, and results are in `docs/spikes/phase0b-windows.md`.
+- **Done:** multi-view + shared environment, suspend/resume, memory target, audio/mute, process→frame mapping, request interception incl. workers, ad-block latency and memory, local opener popups (normal + private), accelerators, context menu, permissions, fullscreen, cert errors, basic auth, screen capture, isolated world (host = main world; extension = isolated, DEC-015), POST detection, custom protocol + blocking, overlay transparency, empty-window memory, crash-dump locality, EME key systems, Job Object/EcoQoS, non-admin network observation of the telemetry controls.
+- **Pending (owner, `docs/testing/phase-0b.md` A1–A5):** real Google sign-in popup, Netflix/Disney+/Spotify playback + resolution, 150% scaling and monitor drag, overlay flicker, optional elevated pktmon/DNS capture (also tests the `ExperimentationAndConfigurationServiceControl` policy). Fill the ⏳ rows of the report from those results, then finish the summary and open the PR.
+- Spike data (profiles, logs, filter lists, screenshots, network CSVs) lives under `%LOCALAPPDATA%\lwb-spike`, never in the repo.
+- **For 1a:** create the environment ourselves and pass it with `with_environment` (DEC-017); register request filters before the first navigation (DEC-018); `TrySuspend` needs a hidden view.
 
 **Spec v0.3 (2026-11-20):** documentation only, on `spec-v0.3` (PR #5). Applies the owner's decisions from the positioning research: headline and §1 rewrite, comparison against competitors' most aggressive memory savers, form/scroll capture and restore (§7.5), a 500-tab restore test, tab search, auto-archive, onboarding, the AI slider (§8.8), spaces as 5a and extensions as 5b, new 0b/0c checklist items, new risks, and D10–D16 (D9 widened). Spec review 2 (`docs/reviews/spec-review-2.md`) is folded in (DEC-014), including restore-safety and screenshot rules and the 1b/1c/1d, 2a/2b/2c and 4a–4d phase splits. The research report is committed at `docs/research/2026-11-browser-positioning.md`.
 - **For 0b:** start from `main` after this merges. The §10 Phase 0b checklist gains WebView2 telemetry, DRM playback and Job Object/EcoQoS items, and `docs/prompts/phase-0b.md` already says to cover every checklist item.

@@ -1,0 +1,86 @@
+wait 3000
+log --- silent audio (gain 0), fresh document
+navv 0 @/pages/audio.html?silent#silent
+wait 3000
+state
+navv 0 @/pages/index.html
+wait 2000
+log --- POST detection
+navv 0 @/pages/form.html
+wait 1500
+click 0 #pbtn
+wait 2000
+navv 0 @/pages/form.html
+wait 1500
+click 0 #gbtn
+wait 2000
+click 0 #fetchpost
+wait 1000
+log --- workers
+navv 0 @/pages/workers.html
+wait 4000
+log --- basic auth
+navv 0 @/auth
+wait 2500
+log --- certificate error
+navv 0 https://expired.badssl.com/
+wait 4000
+log --- internal host from web view (navigation, then fetch)
+navv 0 @/pages/index.html
+wait 1500
+click 0 #internal
+wait 1500
+exec 0 fetch('http://lwb.localhost/chrome.html').then(r=>'status '+r.status).catch(e=>'fetch error '+e)
+wait 1500
+exec 0 new Promise(r=>{const i=new Image();i.onload=()=>r('img loaded');i.onerror=()=>r('img error');i.src='http://lwb.localhost/x.png'})
+wait 1500
+log --- fullscreen
+navv 0 @/pages/fullscreen.html
+wait 1500
+click 0 #fs
+wait 2000
+bounds
+click 0 #exit
+wait 1500
+log --- permissions and capture
+navv 0 @/pages/media.html
+wait 1500
+click 0 #gum
+wait 2000
+click 0 #geo
+wait 2000
+click 0 #notif
+wait 2000
+click 0 #clip
+wait 2000
+click 0 #gdm
+wait 2000
+log --- context menu (right-click on link)
+navv 0 @/pages/index.html
+wait 1500
+rclick 0 #internal
+wait 1500
+log --- DRM key systems
+navv 0 @/pages/drm.html
+wait 4000
+log --- popup with opener (normal)
+navv 0 @/pages/popup.html
+wait 1500
+click 0 #open
+wait 3000
+state
+tab 0
+wait 500
+exec 0 document.title
+log --- popup with opener from a PRIVATE view
+new private @/pages/popup.html
+wait 2000
+click 3 #open
+wait 3000
+state
+tab 3
+exec 3 document.title
+wait 1000
+procx
+wait 1500
+quit

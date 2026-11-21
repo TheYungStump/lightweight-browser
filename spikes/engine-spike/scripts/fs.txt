@@ -1,0 +1,16 @@
+wait 2500
+navv 0 @/pages/fullscreen.html
+wait 1500
+exec 0 JSON.stringify({en:document.fullscreenEnabled, fe:!!document.fullscreenElement})
+docscript 0 document.addEventListener('fullscreenerror',e=>chrome.webview.postMessage('fullscreenerror'));document.addEventListener('fullscreenchange',e=>chrome.webview.postMessage('fullscreenchange '+!!document.fullscreenElement))
+navv 0 @/pages/fullscreen.html?2
+wait 1500
+click 0 #fs
+wait 2000
+exec 0 JSON.stringify({en:document.fullscreenEnabled, fe:!!document.fullscreenElement, ua:navigator.userActivation.hasBeenActive})
+bounds
+wait 1000
+click 0 #exit
+wait 1500
+exec 0 JSON.stringify({fe:!!document.fullscreenElement})
+quit

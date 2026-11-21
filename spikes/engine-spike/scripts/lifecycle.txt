@@ -1,0 +1,52 @@
+# Suspend / resume / ExecuteScript-on-suspended / memory target / audio
+navv 0 @/pages/heartbeat.html
+wait 3000
+tab 1
+wait 3000
+log --- TrySuspend on hidden v0 (heartbeat should stop)
+suspend 0
+wait 5000
+state
+log --- ExecuteScript on suspended v0
+exec 0 document.title
+wait 4000
+state
+log --- suspend again, then Resume
+suspend 0
+wait 4000
+resume 0
+wait 3000
+state
+log --- TrySuspend on VISIBLE view v1
+suspend 1
+wait 2000
+log --- memory target on a heavy hidden page
+navv 0 https://en.wikipedia.org/wiki/World_War_II
+wait 8000
+procs before-low
+memlevel 0 low
+wait 8000
+procs after-low
+memlevel 0 normal
+wait 3000
+procs after-normal
+suspend 0
+wait 5000
+procs after-suspend
+resume 0
+log --- audio
+navv 1 @/pages/audio.html#auto
+wait 3000
+state
+mute 1 on
+wait 1500
+state
+mute 1 off
+wait 1500
+navv 1 @/pages/audio.html#silent
+wait 3000
+state
+navv 1 https://example.com/
+wait 2000
+state
+quit

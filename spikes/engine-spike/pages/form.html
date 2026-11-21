@@ -1,0 +1,5 @@
+<!doctype html><meta charset="utf-8"><title>form</title>
+<h1>Form</h1>
+<form id="post" method="post" action="/post-echo"><input name="q" value="hello"><button id="pbtn">POST</button></form>
+<form id="get" method="get" action="/post-echo"><input name="q" value="hello"><button id="gbtn">GET</button></form>
+<button id="fetchpost" onclick="fetch('/post-echo',{method:'POST',body:'via-fetch'})">fetch POST</button>

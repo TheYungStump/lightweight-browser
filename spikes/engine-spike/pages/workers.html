@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>workers</title>
+<h1>Workers</h1><pre id="o"></pre>
+<script>
+const log = (m) => document.getElementById('o').textContent += m + '\n';
+fetch('/ping/page-fetch?' + Date.now());
+new Worker('dedicated.js');
+try { new SharedWorker('shared.js'); log('shared worker started'); } catch (e) { log('shared: ' + e); }
+navigator.serviceWorker.register('sw.js').then(() => {
+  log('sw registered');
+  navigator.serviceWorker.ready.then(reg => reg.active.postMessage('go'));
+}).catch(e => log('sw: ' + e));
+</script>

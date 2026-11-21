@@ -1,0 +1,22 @@
+wait 3000
+procs no-blocker
+blocker load
+wait 1000
+procs with-blocker
+blocker reset
+log --- cnn.com
+navv 0 https://www.cnn.com/
+wait 20000
+blocker
+blocker reset
+log --- dailymail.co.uk
+navv 0 https://www.dailymail.co.uk/home/index.html
+wait 20000
+blocker
+blocker reset
+log --- theverge.com
+navv 0 https://www.theverge.com/
+wait 20000
+blocker
+procs after-pages
+quit

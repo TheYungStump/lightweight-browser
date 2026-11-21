@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>drm</title>
+<h1>EME key systems</h1><pre id="o"></pre>
+<script>
+const systems = ['com.widevine.alpha', 'com.microsoft.playready', 'com.microsoft.playready.recommendation',
+  'com.microsoft.playready.recommendation.3000', 'com.microsoft.playready.hardware', 'org.w3.clearkey'];
+const cfg = [{ initDataTypes: ['cenc'],
+  videoCapabilities: [{ contentType: 'video/mp4; codecs="avc1.42E01E"' }],
+  audioCapabilities: [{ contentType: 'audio/mp4; codecs="mp4a.40.2"' }] }];
+const res = {};
+Promise.all(systems.map(s => navigator.requestMediaKeySystemAccess(s, cfg).then(() => res[s] = 'supported', e => res[s] = 'no: ' + e.name)))
+  .then(() => { document.getElementById('o').textContent = JSON.stringify(res, null, 1); document.title = 'drm ' + JSON.stringify(res); });
+</script>

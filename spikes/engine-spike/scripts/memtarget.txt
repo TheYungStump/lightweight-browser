@@ -1,0 +1,26 @@
+wait 3000
+navv 0 https://en.wikipedia.org/wiki/World_War_II
+wait 8000
+tab 1
+wait 3000
+procs hidden-normal
+memlevel 0 low
+wait 8000
+procs hidden-low
+memlevel 0 normal
+wait 2000
+procs hidden-normal-again
+suspend 0
+wait 6000
+procs suspended
+resume 0
+wait 1000
+memlevel 0 low
+suspend 0
+wait 6000
+procs low-and-suspended
+resume 0
+tab 0
+wait 4000
+procs visible-again
+quit

@@ -1,0 +1,29 @@
+wait 4000
+job
+navv 0 @/pages/cpu.html#go
+wait 3000
+log --- uncapped, 10 s
+cpu start
+wait 10000
+cpu end
+log --- job hard cap 1% of machine, 10 s
+cpucap 1
+wait 1000
+cpu start
+wait 10000
+cpu end
+cpucap 100
+log --- EcoQoS
+eco get
+eco on
+wait 300
+eco get
+wait 8000
+log --- EcoQoS after 8 s and after tab switches
+eco get
+tab 1
+wait 1500
+tab 0
+wait 1500
+eco get
+quit

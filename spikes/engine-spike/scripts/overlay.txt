@@ -1,0 +1,24 @@
+wait 2500
+navv 0 https://en.wikipedia.org/wiki/Rust_(programming_language)
+wait 5000
+exec 0 addEventListener('mousedown',e=>chrome.webview.postMessage('CONTENT got mousedown at '+e.clientX+','+e.clientY),true)
+shot overlay-0-before
+overlay on
+wait 700
+shot overlay-1-open
+log --- click on the transparent area (veil present)
+osclickxy 900 650
+wait 500
+overlay off
+wait 500
+overlay on noveil
+wait 700
+shot overlay-2-noveil
+log --- OS click on transparent chrome area, no veil element under it
+osclickxy 900 600
+wait 500
+wait 300
+overlay off
+wait 700
+shot overlay-3-closed
+quit

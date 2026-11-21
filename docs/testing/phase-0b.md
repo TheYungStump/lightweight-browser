@@ -18,11 +18,11 @@ A window opens with a grey strip at the top (the "chrome view") and a page below
 ### A1. Google sign-in popup (SPEC §6.6, §10 0b)
 1. In the address bar type `www.reddit.com/login` and press Enter. Click **Continue with Google**.
    - If Reddit doesn't show a popup (it sometimes uses a redirect), use `www.canva.com/login` → **Continue with Google** instead.
-2. [ ] A new tab opens with Google's sign-in page (that's the popup). Note which tab number it became.
+2. [ ] Google's sign-in page appears. That's the popup: the spike shows it **in place of** the current page (as a new tab), so it looks like the same tab. The console confirms it with `NewWindowRequested ... adopted popup vN as tab N`.
 3. [ ] Sign in with your Google account (password, 2FA as usual).
-4. [ ] The popup tab closes by itself and you're back on the opener tab.
+4. [ ] The popup closes by itself (console: `WindowCloseRequested` then `> closeid N`) and you're back on the opener page.
 5. [ ] The opener page shows you as signed in (it may take a second to reload).
-6. Repeat from a **private** tab: click **New private tab**, then do steps 1–5 in that tab.
+6. Repeat from a **private** tab: click **New private tab**, then do steps 1–5 in that tab (type the address while the private tab is showing). Google will ask for your password again: the private tab doesn't share the normal tabs' sign-in. The console line should say `popup inherits private=true`.
    - [ ] Popup opens, sign-in completes, popup closes, opener is signed in.
    - [ ] Close the spike, start it again, open the same site in a normal tab: you are **not** signed in from the private session (private data wasn't kept). (You may still be signed in from step 5 of the normal-tab test; that's expected.)
 7. Afterwards, sign out of Reddit/Canva in the spike if you like. The spike's profile lives in `%LOCALAPPDATA%\lwb-spike\profile-main`; delete that folder to wipe it.
@@ -30,8 +30,9 @@ A window opens with a grey strip at the top (the "chrome view") and a page below
 ### A2. DRM video (Netflix, Disney+, Spotify)
 For each service: navigate to it in the address bar, sign in, start playing something, let it play ~30 s at full window size, then click **Video info**.
 - [ ] **Netflix** (`www.netflix.com`): plays? Press **Ctrl+Alt+Shift+D** on the video to show Netflix's overlay and note the **playing resolution** (e.g. `1920x1080`) and anything that says "PlayReady" or "Widevine". Also note what **Video info** logged.
-- [ ] **Disney+** (`www.disneyplus.com`): plays? Note **Video info** (`w`/`h` = the resolution being decoded).
+- [ ] **Disney+** (`www.disneyplus.com`): plays? Let it play **at least 60 s** (the picture sharpens as it ramps up), then click **Video info** (`w`/`h` = the resolution being decoded). Click it again a minute later.
 - [ ] **Spotify** (`open.spotify.com`): a song plays? (Audio only; Spotify web needs DRM even for audio.)
+- [ ] **Stutter check:** play the same Netflix title for ~2 minutes in the spike, then press Ctrl+Alt+Shift+D and note **Total Dropped Frames** and **Total Frames**. Then play it ~2 minutes in Microsoft Edge (same machine, same window size) and compare the two by eye and with the same overlay. Note whether the stutter shows up only in the spike.
 - [ ] In the console, copy the lines that start with `WebMessage ... EME granted` / `EME denied`: they show which DRM system each service asked for and got.
 - If a service shows an error code instead of playing, note the code.
 
@@ -51,7 +52,7 @@ Then, with the spike running:
 ### A4. Overlay flicker (SPEC §6.5)
 1. Navigate to a busy page, e.g. `www.youtube.com`, and start a video playing.
 2. Click in the address bar and type a few letters: a fake autocomplete dropdown appears over the page. Press **Escape** to close it. Do this ~10 times.
-3. Also click **Overlay test** repeatedly (it toggles the dropdown).
+3. Also click **Overlay test** repeatedly (it toggles the dropdown, which now opens below the grey strip). Don't click the dropdown's entries: they're fake suggestions and navigate away.
 - [ ] Any flicker, white flash, or black flash on the page when the dropdown opens or closes?
 - [ ] Does the video keep playing smoothly behind the dropdown?
 - [ ] Is the page visible through the area around the dropdown (it should be: only the dropdown itself is drawn)?

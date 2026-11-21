@@ -11,7 +11,10 @@
   .row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
   button { font: inherit; padding: 2px 8px; }
   #addr { flex: 1; font: inherit; padding: 4px 8px; }
-  #dropdown { display: none; position: absolute; left: 120px; top: 44px; width: 600px; background: white; border: 1px solid #999;
+  /* Starts below the strip so it lies over the page and never covers the
+     "Overlay test" button (clicking that button a second time used to land on
+     the first suggestion and navigate to example.com). */
+  #dropdown { display: none; position: absolute; left: 120px; top: 86px; width: 600px; background: white; border: 1px solid #999;
               box-shadow: 0 6px 16px rgba(0,0,0,.3); border-radius: 6px; overflow: hidden; }
   #dropdown div { padding: 8px 12px; border-bottom: 1px solid #eee; }
   #dropdown div:hover { background: #dbe8ff; }
